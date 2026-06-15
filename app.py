@@ -3,15 +3,32 @@ import random
 import time
 import os
 import base64
+import json
 
 # 1. 페이지 설정
-st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽", layout="wide") # 화면을 넓게 쓰기 위해 wide 모드 적용
+st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽", layout="wide")
 
-# 브라우저 안전 메모리 데이터베이스 (시작 자금 10,000원 및 상태 유지)
-if "users_backup_db" not in st.session_state:
-    st.session_state.users_backup_db = {
-        "test": {"password": "1234", "money": 10000, "inventory": []}
-    }
+# 💥 [진짜 게임 저장 시스템] 영구 파일 DB 로드/세이브 함수
+DB_FILE = "database.json"
+
+def load_db():
+    """서버 파일에서 유저 데이터 전체를 불러옵니다."""
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            pass
+    # 파일이 없거나 깨졌을 때 기본값 (테스트 계정 기본 생성)
+    return {"test": {"password": "1234", "money": 10000, "inventory": []}}
+
+def save_db(db_data):
+    """유저 데이터를 서버 파일에 즉시 영구 저장합니다."""
+    with open(DB_FILE, "w", encoding="utf-8") as f:
+        json.dump(db_data, f, ensure_ascii=False, indent=4)
+
+# 실시간 파일 동기화 진행
+users_db = load_db()
 
 if "current_user" not in st.session_state:
     st.session_state.current_user = None
@@ -22,7 +39,7 @@ if "draw_result" not in st.session_state:
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 카드 데이터 정의 (💥 하피냐 선수 새롭게 추가!)
+# 2. 카드 데이터 정의
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL"},
     {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL"},
@@ -48,7 +65,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 함수화: 비디오 즉시 재생 로직
+# 비디오 즉시 재생 로직
 def play_ucl_video():
     video_placeholder = st.empty()
     if os.path.exists("uclcard.mp4"):
@@ -83,26 +100,29 @@ if st.session_state.current_user is None:
         
         if submit_button:
             if choice == "회원가입":
-                if user_id in st.session_state.users_backup_db:
+                if user_id in users_db:
                     st.error("❌ 이미 존재하는 아이디입니다.")
                 elif user_id == "" or user_pw == "":
                     st.warning("⚠️ 아이디와 비밀번호를 입력해 주세요.")
                 else:
-                    st.session_state.users_backup_db[user_id] = {"password": user_pw, "money": 10000, "inventory": []}
+                    # 파일 데이터베이스에 추가 및 세이브
+                    users_db[user_id] = {"password": user_pw, "money": 10000, "inventory": []}
+                    save_db(users_db)
                     st.success("🎉 회원가입 완료! 로그인을 선택하고 다시 눌러주세요.")
                     
             elif choice == "로그인":
-                if user_id in st.session_state.users_backup_db and st.session_state.users_backup_db[user_id]["password"] == user_pw:
+                if user_id in users_db and users_db[user_id]["password"] == user_pw:
                     st.session_state.current_user = user_id
                     st.success(f"👋 {user_id}님 환영합니다!")
                     st.rerun()
                 else:
                     st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
 
-# 🕹️ 게임 메인 화면 (사이드바 메뉴 적용)
+# 🕹️ 게임 메인 화면 (로그인 완료 상태)
 else:
     my_id = st.session_state.current_user
-    my_data = st.session_state.users_backup_db[my_id]
+    # 매 프레임마다 파일에서 최신 정보를 새로고침하여 불러옴
+    my_data = users_db[my_id]
     
     # 왼쪽 사이드바 영역에 내 정보 및 소장고 메뉴 고정
     with st.sidebar:
@@ -118,7 +138,6 @@ else:
             
         st.write("---")
         
-        # 잔액 바로 밑에 소장고 상시 전개
         st.subheader("🎒 내 소장고 & 판매")
         my_inv = my_data["inventory"]
         
@@ -136,8 +155,11 @@ else:
                         st.write(f"💵 {p_info['sell_price']:,}원")
                     with col_i2:
                         if st.button("💰 판매", key=f"sell_{item}"):
-                            st.session_state.users_backup_db[my_id]["inventory"].remove(item)
-                            st.session_state.users_backup_db[my_id]["money"] += p_info["sell_price"]
+                            # 카드 인벤토리에서 제거 및 판매 대금 추가
+                            users_db[my_id]["inventory"].remove(item)
+                            users_db[my_id]["money"] += p_info["sell_price"]
+                            # 파일 저장 필수!
+                            save_db(users_db)
                             st.rerun()
                     
                     with st.expander("🔍 실물 보기"):
@@ -147,7 +169,7 @@ else:
                             st.write("이미지 없음")
                     st.write("---")
 
-    # 🎯 [우측 메인 화면 구역] 카드 팩 상점만 깔끔하게 노출
+    # 🎯 [우측 메인 화면 구역] 카드 팩 상점 노출
     st.title("🛒 카드 팩 상점")
     st.write("---")
     
@@ -168,7 +190,7 @@ else:
         if my_data["money"] < 1000:
             st.sidebar.error("❌ 잔액이 부족합니다!")
         else:
-            st.session_state.users_backup_db[my_id]["money"] -= 1000
+            users_db[my_id]["money"] -= 1000
             with st.spinner("⚡ 팩을 뜯는 중..."):
                 time.sleep(0.6)
                 percentage = random.randint(1, 100)
@@ -179,7 +201,9 @@ else:
                     lucky_player = random.choice(normal_players)
                     is_ucl = False
             
-            st.session_state.users_backup_db[my_id]["inventory"].append(lucky_player["name"])
+            # 획득한 카드 파일 DB에 영구 백업
+            users_db[my_id]["inventory"].append(lucky_player["name"])
+            save_db(users_db)
             st.session_state.draw_result = lucky_player
             
             if is_ucl:
@@ -200,12 +224,14 @@ else:
         if my_data["money"] < 50000:
             st.sidebar.error("❌ 잔액이 부족합니다!")
         else:
-            st.session_state.users_backup_db[my_id]["money"] -= 50000
+            users_db[my_id]["money"] -= 50000
             with st.spinner("🌟 UEFA 챔피언스리그 팩 개봉 중..."):
                 time.sleep(0.6)
                 lucky_player = random.choice(rare_players)
             
-            st.session_state.users_backup_db[my_id]["inventory"].append(lucky_player["name"])
+            # 파일 DB에 영구 백업
+            users_db[my_id]["inventory"].append(lucky_player["name"])
+            save_db(users_db)
             st.session_state.draw_result = lucky_player
             
             play_ucl_video()
@@ -228,7 +254,7 @@ else:
         time.sleep(1)
         st.rerun()
 
-# 5. 🔊 안전한 오디오 인젝션
+# 5. 오디오 인젝션
 if os.path.exists("loading.mp3"):
     try:
         with open("loading.mp3", "rb") as f:
