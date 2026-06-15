@@ -1,28 +1,53 @@
 import streamlit as st
 import random
 import time
+import json
 
-# 1. 페이지 설정
+# 1. 💥 [스크롤 버그 해결] 화면 세로 스크롤이 가능하도록 기본 CSS 강제 주입
 st.set_page_config(page_title="축구 카드 뽑기 게임", page_icon="⚽", layout="centered")
 
-# 2. 게임 데이터베이스 (세션 상태 초기화)
-if "users_db" not in st.session_state:
-    # 기본 가상 계정 (아이디: test, 비밀번호: 1234)
-    st.session_state.users_db = {
-        "test": {"password": "1234", "money": 5000, "inventory": []}
+st.markdown("""
+    <style>
+    /* 스트림릿 기본 틀의 스크롤 막힘 현상 강제 해제 */
+    .stApp {
+        overflow-y: auto !important;
+        height: auto !important;
     }
+    html, body {
+        overflow-y: auto !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# 2. 💾 [데이터 영구 저장 시스템] 브라우저 쿠키/로컬스토리지 대용 텍스트 저장 방식
+# 회원 정보와 돈, 인벤토리를 'game_save.json' 파일에 실시간으로 기록하여 나갔다 와도 유지됩니다.
+DATA_FILE = "game_save.json"
+
+def load_data():
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        # 파일이 없으면 기본 테스트 계정 생성
+        return {"test": {"password": "1234", "money": 5000, "inventory": []}}
+
+def save_data(data):
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+# 실시간 서버 데이터 동기화
+if "users_db" not in st.session_state:
+    st.session_state.users_db = load_data()
 
 if "current_user" not in st.session_state:
     st.session_state.current_user = None
 
-# 3. 카드 데이터 정의 (확률 계산을 위해 리스트 분리)
-# 🌟 [10% 확률] 희귀 카드 목록
+# 3. 카드 데이터 정의 (10% vs 90%)
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 800, "grade": "🔥 전설 (10%)"},
     {"name": "이현 UCL", "image": "UEFA Champions League 24 STAR 이현.png", "sell_price": 800, "grade": "🔥 전설 (10%)"}
 ]
 
-# 🌟 [90% 확률] 일반 카드 목록
 normal_players = [
     {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 300, "grade": "일반 (90%)"},
     {"name": "권태희", "image": "권태희.png", "sell_price": 300, "grade": "일반 (90%)"},
@@ -30,12 +55,9 @@ normal_players = [
     {"name": "이현", "image": "이현.png", "sell_price": 300, "grade": "일반 (90%)"}
 ]
 
-# 전체 도감 조회를 위한 통합 리스트
 all_players = rare_players + normal_players
 
-
 # --- 화면 구현 ---
-
 st.title("⚽ 풋볼 카드 뽑기 매니저 게임")
 
 # 🔐 4. 로그인 / 회원가입 화면
@@ -49,16 +71,20 @@ if st.session_state.current_user is None:
     
     if choice == "회원가입":
         if st.button("📝 계정 만들기"):
+            # 최신 데이터 불러와서 대조
+            st.session_state.users_db = load_data()
             if user_id in st.session_state.users_db:
                 st.error("❌ 이미 존재하는 아이디입니다.")
             elif user_id == "" or user_pw == "":
                 st.warning("⚠️ 아이디와 비밀번호를 입력해 주세요.")
             else:
                 st.session_state.users_db[user_id] = {"password": user_pw, "money": 5000, "inventory": []}
+                save_data(st.session_state.users_db) # 파일에 즉시 저장
                 st.success("🎉 회원가입 완료! 로그인을 진행해 주세요.")
                 
     elif choice == "로그인":
         if st.button("🚀 로그인하기"):
+            st.session_state.users_db = load_data() # 데이터 최신화
             if user_id in st.session_state.users_db and st.session_state.users_db[user_id]["password"] == user_pw:
                 st.session_state.current_user = user_id
                 st.success(f"👋 {user_id}님 환영합니다!")
@@ -84,40 +110,35 @@ else:
         
     st.write("---")
     
-    # 탭 메뉴 나누기
     tab1, tab2 = st.tabs(["✨ 카드 팩 뽑기", "🎒 내 소장고 & 판매"])
     
     # --- [탭 1: 카드 뽑기] ---
     with tab1:
         st.subheader("🎯 대박 축구 카드 팩")
         st.write("💰 **1회 뽑기 비용:** 1,000원")
-        st.caption("※ 마크롱, 이현 UCL 카드는 10% 확률로 등장합니다!")
         
         if st.button("🔥 카드 팩 오픈! (1,000원 결제)", type="primary", use_container_width=True):
             if my_data["money"] < 1000:
                 st.error("❌ 잔액이 부족합니다! 소장 중인 카드를 팔아서 돈을 모으세요.")
             else:
-                # 돈 차감
+                # 돈 차감 및 가챠 구동
                 st.session_state.users_db[my_id]["money"] -= 1000
                 
                 with st.spinner("⚡ 카드 팩을 뜯는 중..."):
                     time.sleep(1.2)
-                    
-                    # 💥 10% vs 90% 확률 작동 주사위 던지기
                     percentage = random.randint(1, 100)
-                    
-                    if percentage <= 10:  # 1~10 나오면 10% 확률 당첨!
+                    if percentage <= 10:
                         lucky_player = random.choice(rare_players)
-                        st.balloons() # 전설은 특별히 풍선 이펙트!
-                    else:  # 11~100 나오면 90% 일반 카드
+                        st.balloons()
+                    else:
                         lucky_player = random.choice(normal_players)
                 
                 st.success(f"🎉 **[{lucky_player['grade']}] {lucky_player['name']}** 선수를 뽑았습니다!")
                 
-                # 유저 인벤토리에 추가
+                # 인벤토리에 추가 및 💥 실시간 파일 저장!!
                 st.session_state.users_db[my_id]["inventory"].append(lucky_player["name"])
+                save_data(st.session_state.users_db)
                 
-                # 카드 이미지 출력
                 col_c1, col_c2, col_c3 = st.columns([1, 2, 1])
                 with col_c2:
                     try:
@@ -147,8 +168,11 @@ else:
                         st.write(f"💵 판매가: {p_info['sell_price']}원")
                     with col_i3:
                         if st.button("💰 판매하기", key=f"sell_{item}"):
+                            # 카드 인벤토리에서 한 장 빼고 돈 더한 뒤 💥 실시간 파일 저장!!
                             st.session_state.users_db[my_id]["inventory"].remove(item)
                             st.session_state.users_db[my_id]["money"] += p_info["sell_price"]
+                            save_data(st.session_state.users_db)
+                            
                             st.success(f"💵 {item} 카드를 판매 완료했습니다!")
                             st.rerun()
                     
