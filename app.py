@@ -3,31 +3,12 @@ import random
 import time
 import os
 import base64
-import json
 
 # 1. 페이지 설정
-st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽", layout="centered")
+st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽", layout="wide") # 화면을 넓게 쓰기 위해 wide 모드 적용
 
-# 💥 [핵심 기능] 브라우저 로컬 스토리지 연동을 위한 JavaScript 컴포넌트
-# 이 코드가 실행되면 브라우저에 저장된 내역을 불러오고, 변경될 때마다 자동 저장합니다.
-st.markdown("""
-    <script>
-    // 브라우저 로컬스토리지에서 데이터 로드하여 스트림릿으로 전달
-    function loadGameData() {
-        const data = localStorage.getItem('soccer_manager_db');
-        if (data) {
-            const streamlitDoc = window.parent.document;
-            const inputs = streamlitDoc.querySelectorAll('input');
-            // 스트림릿 세션과 연동하기 위한 트릭
-        }
-    }
-    </script>
-""", unsafe_allow_html=True)
-
-# 💥 파일 리셋의 저주를 피하기 위해 파일 대신, 세션이 끊겨도 유지되는 로컬 딕셔너리 구조를 사용하되
-# 스트림릿이 재시작되어도 유실되지 않도록 세션 상태를 안전하게 바인딩합니다.
+# 브라우저 안전 메모리 데이터베이스 (시작 자금 10,000원 및 상태 유지)
 if "users_backup_db" not in st.session_state:
-    # 최초 가입 시 기본 자금 10,000원으로 원상 복구!
     st.session_state.users_backup_db = {
         "test": {"password": "1234", "money": 10000, "inventory": []}
     }
@@ -43,14 +24,14 @@ if "cooldown_time" not in st.session_state:
 
 # 2. 카드 데이터 정의
 rare_players = [
-    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL (10%)"},
-    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 45000, "grade": "🏆 UCL (10%)"},
-    {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 45000, "grade": "🏆 UCL (10%)"}
+    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL"},
+    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 45000, "grade": "🏆 UCL"},
+    {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 45000, "grade": "🏆 UCL"}
 ]
 
 normal_players = [
-    {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "🏃 KICK-OFF (90%)"},
-    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "🏃 KICK-OFF (90%)"}
+    {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "🏃 KICK-OFF"},
+    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "🏃 KICK-OFF"}
 ]
 
 all_players = rare_players + normal_players
@@ -66,12 +47,30 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 4. 메인 타이틀
-st.title("⚽ 동네 축구 카드 매니저")
-st.write("---")
+# 함수화: 비디오 즉시 재생 로직
+def play_ucl_video():
+    video_placeholder = st.empty()
+    if os.path.exists("uclcard.mp4"):
+        try:
+            with open("uclcard.mp4", "rb") as video_file:
+                video_bytes = video_file.read()
+            video_base64 = base64.b64encode(video_bytes).decode()
+            video_html = f'''
+                <video autoplay playsinline style="width:100%; max-width:100%; border-radius:10px;">
+                    <source src="data:video/mp4;base64,{video_base64}" type="video/mp4">
+                </video>
+            '''
+            video_placeholder.markdown(video_html, unsafe_allow_html=True)
+        except:
+            pass
+        time.sleep(5.0) 
+        video_placeholder.empty()
+    st.balloons()
 
-# 🔐 로그인 / 회원가입 폼
+# 4. 로그인 화면 및 메인 게임 분기
 if st.session_state.current_user is None:
+    st.title("⚽ 동네 축구 카드 매니저")
+    st.write("---")
     st.subheader("🔑 로그인 및 회원가입")
     menu = ["로그인", "회원가입"]
     choice = st.radio("원하는 작업을 선택하세요", menu, horizontal=True)
@@ -88,9 +87,8 @@ if st.session_state.current_user is None:
                 elif user_id == "" or user_pw == "":
                     st.warning("⚠️ 아이디와 비밀번호를 입력해 주세요.")
                 else:
-                    # 회원가입 지원금 없이 정상적으로 10,000원 시작!
                     st.session_state.users_backup_db[user_id] = {"password": user_pw, "money": 10000, "inventory": []}
-                    st.success("🎉 회원가입 완료! 이제 바로 로그인을 선택하고 버튼을 눌러주세요.")
+                    st.success("🎉 회원가입 완료! 로그인을 선택하고 다시 눌러주세요.")
                     
             elif choice == "로그인":
                 if user_id in st.session_state.users_backup_db and st.session_state.users_backup_db[user_id]["password"] == user_pw:
@@ -100,86 +98,78 @@ if st.session_state.current_user is None:
                 else:
                     st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
 
-# 🕹️ 게임 메인 화면 (로그인 완료 상태)
+# 🕹️ 게임 메인 화면 (사이드바 메뉴 적용)
 else:
     my_id = st.session_state.current_user
     my_data = st.session_state.users_backup_db[my_id]
     
-    # [상단 구역] 유저 정보 및 잔액 표시
-    col_u1, col_u2 = st.columns([2, 1])
-    with col_u1:
+    # 💥 [수정 핵심] 왼쪽 사이드바 영역에 내 정보 및 소장고 메뉴 고정
+    with st.sidebar:
+        st.header("⚽ 매니저 센터")
         st.write(f"👤 **유저:** {my_id}님")
-    with col_u2:
         st.write(f"💰 **보유 금액:** {my_data['money']:,}원")
         
-    # 💥 [요청 반영] 잔액 바로 밑에 딱 달라붙어 있는 '내 소장고 버튼(Expander)'
-    with st.expander("🎒 내 소장고 확인 및 카드 판매 (클릭해서 열기)", expanded=False):
+        if st.button("🔒 로그아웃", use_container_width=True):
+            st.session_state.current_user = None
+            st.session_state.draw_result = None
+            st.session_state.cooldown_time = 0
+            st.rerun()
+            
+        st.write("---")
+        
+        # 잔액 바로 밑에 소장고 상시 전개
+        st.subheader("🎒 내 소장고 & 판매")
         my_inv = my_data["inventory"]
         
         if not my_inv:
-            st.info("아직 소장한 카드가 없습니다. 아래에서 카드 팩을 뽑아보세요!")
+            st.info("소장한 카드가 없습니다.")
         else:
             for item in set(my_inv):
                 count = my_inv.count(item)
                 p_info = next((p for p in all_players if p["name"] == item), None)
                 
                 if p_info:
-                    col_i1, col_i2, col_i3 = st.columns([2, 1, 1])
+                    st.write(f"🏃‍♂️ **[{p_info['grade']}] {item}** ({count}장)")
+                    col_i1, col_i2 = st.columns([1, 1])
                     with col_i1:
-                        st.write(f"🏃‍♂️ **[{p_info['grade']}] {item}** (보유: {count}장)")
+                        st.write(f"💵 {p_info['sell_price']:,}원")
                     with col_i2:
-                        st.write(f"💵 판매가: {p_info['sell_price']:,}원")
-                    with col_i3:
-                        if st.button("💰 판매하기", key=f"sell_{item}"):
+                        if st.button("💰 판매", key=f"sell_{item}"):
                             st.session_state.users_backup_db[my_id]["inventory"].remove(item)
                             st.session_state.users_backup_db[my_id]["money"] += p_info["sell_price"]
-                            st.success(f"💵 {item} 카드를 판매 완료했습니다!")
                             st.rerun()
                     
-                    with st.expander(f"🔍 {item} 카드 실물 보기"):
+                    with st.expander("🔍 실물 보기"):
                         try:
-                            st.image(p_info['image'], width=150)
+                            st.image(p_info['image'], use_container_width=True)
                         except:
-                            st.write("이미지가 존재하지 않습니다.")
+                            st.write("이미지 없음")
                     st.write("---")
-                    
-    if st.button("🔒 로그아웃"):
-        st.session_state.current_user = None
-        st.session_state.draw_result = None
-        st.session_state.cooldown_time = 0
-        st.rerun()
-        
-    st.write("---")
 
-    # 🎯 [하단 구역] 카드 팩 뽑기 존
-    st.subheader("✨ 카드 팩 뽑기")
-    st.write("💰 **1회 뽑기 비용:** 1,000원")
+    # 🎯 [우측 메인 화면 구역] 카드 팩 상점만 깔끔하게 노출
+    st.title("🛒 카드 팩 상점")
+    st.write("---")
     
     is_cooling = False
     current_ts = time.time()
-    
     if st.session_state.cooldown_time > current_ts:
         is_cooling = True
         rem_time = int(st.session_state.cooldown_time - current_ts)
-        
-        if st.session_state.draw_result and "UCL" in st.session_state.draw_result["grade"]:
-            btn_text = f"⏳ UCL 카드 당첨! 쿨타임 대기 중... ({rem_time}초)"
-        else:
-            btn_text = f"⏳ 쿨타임 대기 중... ({rem_time}초)"
     else:
-        btn_text = "🔥 카드 팩 오픈! (1,000원 결제)"
         st.session_state.draw_result = None
-        
-    if st.button(btn_text, type="primary", use_container_width=True, disabled=is_cooling):
+
+    # --- 1번 팩: 일반 카드 팩 (KICK-OFF 90% / UCL 10%) ---
+    st.markdown("### 🎯 동네 축구 일반 카드 팩")
+    st.write("💵 **비용:** 1,000원 | 📊 **확률:** KICK-OFF (90%), UCL (10%)")
+    
+    btn_text_normal = f"⏳ 쿨타임 대기 중... ({rem_time}초)" if is_cooling else "🔥 일반 카드 팩 오픈! (1,000원)"
+    if st.button(btn_text_normal, key="btn_normal", type="secondary", use_container_width=True, disabled=is_cooling):
         if my_data["money"] < 1000:
-            st.error("❌ 잔액이 부족합니다!")
+            st.sidebar.error("❌ 잔액이 부족합니다!")
         else:
             st.session_state.users_backup_db[my_id]["money"] -= 1000
-            
-            video_placeholder = st.empty()
-            
-            with st.spinner("⚡ 카드 팩을 뜯는 중..."):
-                time.sleep(0.8)
+            with st.spinner("⚡ 팩을 뜯는 중..."):
+                time.sleep(0.6)
                 percentage = random.randint(1, 100)
                 if percentage <= 10:
                     lucky_player = random.choice(rare_players)
@@ -191,39 +181,43 @@ else:
             st.session_state.users_backup_db[my_id]["inventory"].append(lucky_player["name"])
             st.session_state.draw_result = lucky_player
             
-            # UCL 등급 전용 비디오 및 20초 잠금
             if is_ucl:
-                if os.path.exists("uclcard.mp4"):
-                    try:
-                        with open("uclcard.mp4", "rb") as video_file:
-                            video_bytes = video_file.read()
-                        video_base64 = base64.b64encode(video_bytes).decode()
-                        
-                        video_html = f'''
-                            <video autoplay playsinline style="width:100%; max-width:100%; border-radius:10px;">
-                                <source src="data:video/mp4;base64,{video_base64}" type="video/mp4">
-                            </video>
-                        '''
-                        video_placeholder.markdown(video_html, unsafe_allow_html=True)
-                    except:
-                        pass
-                    
-                    time.sleep(5.0) 
-                    video_placeholder.empty()
-                st.balloons()
+                play_ucl_video()
                 st.session_state.cooldown_time = time.time() + 20
             else:
                 st.session_state.cooldown_time = time.time() + 3
+            st.rerun()
+
+    st.write("---")
+
+    # --- 2번 팩: UCL 전용 프리미엄 팩 (UCL 100%) ---
+    st.markdown("### 🏆 UCL 전용 프리미엄 팩")
+    st.write("💵 **비용:** 50,000원 | 📊 **확률:** **UCL 등급 카드 100% 확정 등장!**")
+    
+    btn_text_ucl = f"⏳ UCL 당첨 연출 대기 중... ({rem_time}초)" if is_cooling else "✨ UCL 전용 팩 오픈! (50,000원)"
+    if st.button(btn_text_ucl, key="btn_ucl_pack", type="primary", use_container_width=True, disabled=is_cooling):
+        if my_data["money"] < 50000:
+            st.sidebar.error("❌ 잔액이 부족합니다!")
+        else:
+            st.session_state.users_backup_db[my_id]["money"] -= 50000
+            with st.spinner("🌟 UEFA 챔피언스리그 팩 개봉 중..."):
+                time.sleep(0.6)
+                lucky_player = random.choice(rare_players)
             
-            # 데이터를 안전하게 브라우저 로컬 저장소에 동기화하라는 스크립트 실행 명령 대용 데이터 유지법
+            st.session_state.users_backup_db[my_id]["inventory"].append(lucky_player["name"])
+            st.session_state.draw_result = lucky_player
+            
+            play_ucl_video()
+            st.session_state.cooldown_time = time.time() + 20
             st.rerun()
             
-    # 쿨타임 동안 카드 사진 및 정보 고정 노출존
+    # 쿨타임 동안 메인 화면 중앙에 카드 사진 노출
     if is_cooling and st.session_state.draw_result:
+        st.write("---")
         p_res = st.session_state.draw_result
         st.success(f"🎉 **[{p_res['grade']}] {p_res['name']}** 선수를 뽑았습니다!")
         
-        col_c1, col_c2, col_c3 = st.columns([1, 2, 1])
+        col_c1, col_c2, col_c3 = st.columns([1, 1.5, 1])
         with col_c2:
             try:
                 st.image(p_res['image'], use_container_width=True)
