@@ -1,0 +1,7 @@
+{
+    "test": {
+        "password": "1234",
+        "money": 5000,
+        "inventory": []
+    }
+}
