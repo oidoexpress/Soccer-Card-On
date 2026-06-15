@@ -41,15 +41,15 @@ if "current_user" not in st.session_state:
 
 # 3. 카드 데이터 정의
 rare_players = [
-    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 800, "grade": "🔥 전설 (10%)"},
-    {"name": "이현 UCL", "image": "UEFA Champions League 24 STAR 이현.png", "sell_price": 800, "grade": "🔥 전설 (10%)"}
+    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🔥 전설 (10%)"},
+    {"name": "이현 UCL", "image": "UEFA Champions League 24 STAR 이현.png", "sell_price": 50000, "grade": "🔥 전설 (10%)"}
 ]
 
 normal_players = [
-    {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 300, "grade": "일반 (90%)"},
-    {"name": "권태희", "image": "권태희.png", "sell_price": 300, "grade": "일반 (90%)"},
-    {"name": "안창혁", "image": "안창혁.png", "sell_price": 300, "grade": "일반 (90%)"},
-    {"name": "이현", "image": "이현.png", "sell_price": 300, "grade": "일반 (90%)"}
+    {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "일반 (90%)"},
+    {"name": "권태희", "image": "권태희.png", "sell_price": 1000, "grade": "일반 (90%)"},
+    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "일반 (90%)"},
+    {"name": "이현", "image": "이현.png", "sell_price": 1000, "grade": "일반 (90%)"}
 ]
 
 all_players = rare_players + normal_players
