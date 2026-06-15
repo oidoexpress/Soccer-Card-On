@@ -2,27 +2,39 @@ import streamlit as st
 import random
 import time
 import json
+import base64
 
 # 1. 페이지 설정 및 스크롤 버그 방지 CSS
 st.set_page_config(page_title="축구 카드 뽑기 게임", page_icon="⚽", layout="centered")
 
-# 💥 [발로란트 인트로 로딩 연출 CSS]
-# 첫 접속 시 2.5초 동안 발로란트 스타일의 네온 레드 로딩 바가 작동하고 샥 사라집니다.
-st.markdown("""
+# 💥 [음악 파일 읽어오기]
+# loading.mp3 파일을 시스템이 읽을 수 있게 변환합니다.
+def get_audio_html(audio_file):
+    try:
+        with open(audio_file, "rb") as f:
+            audio_bytes = f.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode()
+        # autoplay를 넣어서 브라우저 잠금이 풀리면 바로 재생되게 만듭니다.
+        return f'<audio autoplay src="data:audio/mp3;base64,{audio_base64}">'
+    except FileNotFoundError:
+        return ""
+
+audio_html = get_audio_html("loading.mp3")
+
+# 💥 [발로란트 인트로 로딩 연출 CSS + 오디오 인젝션]
+st.markdown(f"""
     <style>
-    /* 전체 배경을 발로란트 특유의 어두운 다크 그레이로 설정 */
-    .stApp {
+    .stApp {{
         background-color: #11141a;
         color: #ece8e1;
         overflow-y: auto !important;
         height: auto !important;
-    }
-    html, body {
+    }}
+    html, body {{
         overflow-y: auto !important;
-    }
+    }}
     
-    /* 인트로 로딩 전체 화면 */
-    #loading-overlay {
+    #loading-overlay {{
         position: fixed;
         top: 0; left: 0; width: 100vw; height: 100vh;
         background-color: #11141a;
@@ -31,60 +43,58 @@ st.markdown("""
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        animation: fadeOut 0.5s ease-in-out 2.5s forwards; /* 2.5초 후 스르륵 사라짐 */
-    }
+        animation: fadeOut 0.5s ease-in-out 3.5s forwards; /* 음악을 조금 더 듣기 위해 3.5초로 연장 */
+    }}
     
-    /* 발로란트 스타일 엠블럼 로고 */
-    .valorant-logo {
+    .valorant-logo {{
         font-size: 70px;
         font-weight: 900;
-        color: #ff4655; /* 발로란트 시그니처 레드 */
+        color: #ff4655;
         letter-spacing: 8px;
         margin-bottom: 20px;
         animation: glitch 1.5s infinite;
-    }
+    }}
     
-    /* 레이저 로딩 바 틀 */
-    .loading-bar-container {
+    .loading-bar-container {{
         width: 200px;
         height: 3px;
         background-color: #232936;
         overflow: hidden;
         position: relative;
-    }
+    }}
     
-    /* 지이잉 움직이는 빨간 레이저 */
-    .loading-bar {
+    .loading-bar {{
         width: 100%;
         height: 100%;
         background-color: #ff4655;
         position: absolute;
         left: -100%;
         animation: scan 1.5s infinite ease-in-out;
-    }
+    }}
     
-    /* 애니메이션 효과들 */
-    @keyframes scan {
-        0% { left: -100%; }
-        50% { left: 0%; }
-        100% { left: 100%; }
-    }
-    @keyframes glitch {
-        0% { transform: scale(1); opacity: 0.9; }
-        50% { transform: scale(1.03); opacity: 1; text-shadow: 2px 2px #00f3ff; }
-        100% { transform: scale(1); opacity: 0.9; }
-    }
-    @keyframes fadeOut {
-        to { opacity: 0; visibility: hidden; }
-    }
+    @keyframes scan {{
+        0% {{ left: -100%; }}
+        50% {{ left: 0%; }}
+        100% {{ left: 100%; }}
+    }}
+    @keyframes glitch {{
+        0% {{ transform: scale(1); opacity: 0.9; }}
+        50% {{ transform: scale(1.03); opacity: 1; text-shadow: 2px 2px #00f3ff; }}
+        100% {{ transform: scale(1); opacity: 0.9; }}
+    }}
+    @keyframes fadeOut {{
+        to {{ opacity: 0; visibility: hidden; }}
+    }}
     </style>
+    
+    {audio_html}
     
     <div id="loading-overlay">
         <div class="valorant-logo">⚽ V ⚽</div>
         <div class="loading-bar-container">
             <div class="loading-bar"></div>
         </div>
-        <p style="color: #677080; margin-top: 15px; font-family: monospace; letter-spacing: 3px; font-size: 12px;">LOADING SYSTEM...</p>
+        <p style="color: #677080; margin-top: 15px; font-family: monospace; letter-spacing: 3px; font-size: 12px;">📢 터치하면 시스템 사운드가 활성화됩니다...</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -108,7 +118,7 @@ if "users_db" not in st.session_state:
 if "current_user" not in st.session_state:
     st.session_state.current_user = None
 
-# 3. 카드 데이터 정의
+# 3. 카드 데이터 정의 (수정하신 가격 정보는 이 리스트 안에서 직접 변경하시면 됩니다!)
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🔥 전설 (10%)"},
     {"name": "이현 UCL", "image": "UEFA Champions League 24 STAR 이현.png", "sell_price": 50000, "grade": "🔥 전설 (10%)"}
@@ -118,7 +128,7 @@ normal_players = [
     {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "일반 (90%)"},
     {"name": "권태희", "image": "권태희.png", "sell_price": 1000, "grade": "일반 (90%)"},
     {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "일반 (90%)"},
-    {"name": "이현", "image": "이현.png", "sell_price": 300, "grade": "일반 (90%)"}
+    {"name": "이현", "image": "이현.png", "sell_price": 1000, "grade": "일반 (90%)"}
 ]
 
 all_players = rare_players + normal_players
@@ -244,5 +254,5 @@ with main_container:
                             try:
                                 st.image(p_info['image'], width=150)
                             except:
-                                st.write("이미지가 존재하지 않습니다.")
+                                p_info_sell_check = "이미지가 존재하지 않습니다."
                         st.write("---")
