@@ -34,7 +34,7 @@ if "draw_result" not in st.session_state:
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 카드 데이터 정의
+# 2. 카드 데이터 정의 (💥 호날두 선수 새롭게 추가!)
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL"},
     {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL"},
@@ -44,18 +44,18 @@ rare_players = [
 
 normal_players = [
     {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "🏃 KICK-OFF"},
-    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "🏃 KICK-OFF"}
+    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "🏃 KICK-OFF"},
+    {"name": "크리스티아누 호날두", "image": "KICK OFF 21 크리스티아누 호날두.webp", "sell_price": 1000, "grade": "🏃 KICK-OFF"}
 ]
 
 all_players = rare_players + normal_players
 
-# 3. 💥 [패드/모바일 스크롤 버그 해결] 강제 스크롤 및 터치 허용 CSS 적용
+# 3. [패드/모바일 스크롤 버그 해결 스타일 포함]
 st.markdown("""
     <style>
-    /* 아이패드/모바일 크롬에서 터치 세로 스크롤을 절대 막지 못하도록 강제 주입 */
     html, body, [data-testid="stAppViewContainer"] {
         overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important; /* iOS 크롬/사파리 부드러운 터치 스크롤 */
+        -webkit-overflow-scrolling: touch !important;
     }
     .stTextInput input {
         color: #ece8e1 !important;
