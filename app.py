@@ -6,16 +6,86 @@ import json
 # 1. 페이지 설정 및 스크롤 버그 방지 CSS
 st.set_page_config(page_title="축구 카드 뽑기 게임", page_icon="⚽", layout="centered")
 
+# 💥 [발로란트 인트로 로딩 연출 CSS]
+# 첫 접속 시 2.5초 동안 발로란트 스타일의 네온 레드 로딩 바가 작동하고 샥 사라집니다.
 st.markdown("""
     <style>
+    /* 전체 배경을 발로란트 특유의 어두운 다크 그레이로 설정 */
     .stApp {
+        background-color: #11141a;
+        color: #ece8e1;
         overflow-y: auto !important;
         height: auto !important;
     }
     html, body {
         overflow-y: auto !important;
     }
+    
+    /* 인트로 로딩 전체 화면 */
+    #loading-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background-color: #11141a;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        animation: fadeOut 0.5s ease-in-out 2.5s forwards; /* 2.5초 후 스르륵 사라짐 */
+    }
+    
+    /* 발로란트 스타일 엠블럼 로고 */
+    .valorant-logo {
+        font-size: 70px;
+        font-weight: 900;
+        color: #ff4655; /* 발로란트 시그니처 레드 */
+        letter-spacing: 8px;
+        margin-bottom: 20px;
+        animation: glitch 1.5s infinite;
+    }
+    
+    /* 레이저 로딩 바 틀 */
+    .loading-bar-container {
+        width: 200px;
+        height: 3px;
+        background-color: #232936;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    /* 지이잉 움직이는 빨간 레이저 */
+    .loading-bar {
+        width: 100%;
+        height: 100%;
+        background-color: #ff4655;
+        position: absolute;
+        left: -100%;
+        animation: scan 1.5s infinite ease-in-out;
+    }
+    
+    /* 애니메이션 효과들 */
+    @keyframes scan {
+        0% { left: -100%; }
+        50% { left: 0%; }
+        100% { left: 100%; }
+    }
+    @keyframes glitch {
+        0% { transform: scale(1); opacity: 0.9; }
+        50% { transform: scale(1.03); opacity: 1; text-shadow: 2px 2px #00f3ff; }
+        100% { transform: scale(1); opacity: 0.9; }
+    }
+    @keyframes fadeOut {
+        to { opacity: 0; visibility: hidden; }
+    }
     </style>
+    
+    <div id="loading-overlay">
+        <div class="valorant-logo">⚽ V ⚽</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar"></div>
+        </div>
+        <p style="color: #677080; margin-top: 15px; font-family: monospace; letter-spacing: 3px; font-size: 12px;">LOADING SYSTEM...</p>
+    </div>
 """, unsafe_allow_html=True)
 
 # 2. 데이터 파일 저장/로드 함수 정의
@@ -32,7 +102,6 @@ def save_data(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-# 💥 [버그 수정 포인트] 화면 빌드가 씹히지 않도록 안전하게 세션 상태 초기화
 if "users_db" not in st.session_state:
     st.session_state.users_db = load_data()
 
@@ -49,18 +118,18 @@ normal_players = [
     {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "일반 (90%)"},
     {"name": "권태희", "image": "권태희.png", "sell_price": 1000, "grade": "일반 (90%)"},
     {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "일반 (90%)"},
-    {"name": "이현", "image": "이현.png", "sell_price": 1000, "grade": "일반 (90%)"}
+    {"name": "이현", "image": "이현.png", "sell_price": 300, "grade": "일반 (90%)"}
 ]
 
 all_players = rare_players + normal_players
 
-# 💥 [버그 수정 포인트] 메인 컨테이너를 하나 파서 무조건 첫 로딩 때 화면이 그려지도록 강제 고정
+# 4. 메인 화면 출력
 main_container = st.container()
 
 with main_container:
     st.title("⚽ 풋볼 카드 뽑기 매니저 게임")
 
-    # 🔐 4. 로그인 / 회원가입 화면
+    # 🔐 로그인 / 회원가입 화면
     if st.session_state.current_user is None:
         st.subheader("🔑 로그인 및 회원가입")
         menu = ["로그인", "회원가입"]
@@ -91,12 +160,11 @@ with main_container:
                 else:
                     st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
 
-    # 🕹️ 5. 게임 메인 화면 (로그인 후)
+    # 🕹️ 게임 메인 화면 (로그인 후)
     else:
         my_id = st.session_state.current_user
         my_data = st.session_state.users_db[my_id]
         
-        # 상단바 유저 정보
         col_u1, col_u2 = st.columns([2, 1])
         with col_u1:
             st.write(f"👤 **유저:** {my_id}님")
