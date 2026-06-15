@@ -10,12 +10,12 @@ st.write("직접 만든 한정판 축구 카드를 획득해 보세요!")
 
 # 2. 내 이미지 파일들과 매칭
 players = [
-    {"name": "노무현", "image": "images/KICK-OFF 23-24 노무현.png"},
-    {"name": "마크롱", "image": "images/UEFA Champions League 24 STAR 마크롱.png"},
-    {"name": "이현", "image": "images/UEFA Champions League 24 STAR 이현.png"},
-    {"name": "권태희", "image": "images/권태희.png"},
-    {"name": "안창혁", "image": "images/안창혁.png"},
-    {"name": "이현(단독)", "image": "images/이현.png"}
+    {"name": "노무현", "image": "images_folder/KICK-OFF 23-24 노무현.png"},
+    {"name": "마크롱", "image": "images_folder/UEFA Champions League 24 STAR 마크롱.png"},
+    {"name": "이현", "image": "images_folder/UEFA Champions League 24 STAR 이현.png"},
+    {"name": "권태희", "image": "images_folder/권태희.png"},
+    {"name": "안창혁", "image": "images_folder/안창혁.png"},
+    {"name": "이현(단독)", "image": "images_folder/이현.png"}
 ]
 
 # 3. 뽑기 버튼 작동
