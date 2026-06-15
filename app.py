@@ -25,8 +25,8 @@ if "cooldown_time" not in st.session_state:
 # 2. 카드 데이터 정의
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL"},
-    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 45000, "grade": "🏆 UCL"},
-    {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 45000, "grade": "🏆 UCL"}
+    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL"},
+    {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 51000, "grade": "🏆 UCL"}
 ]
 
 normal_players = [
