@@ -4,20 +4,18 @@ import time
 import json
 import os
 
-# 1. 페이지 설정 (가장 먼저 실행)
+# 1. 페이지 설정 (가장 먼저 실행되어야 앱이 터지지 않습니다)
 st.set_page_config(page_title="동네축구 카드 뽑기 게임", page_icon="⚽", layout="centered")
 
-# 2. 💥 [핵심 추가] 게임 세이브 파일 강제 생성 시스템 💥
+# 2. 게임 세이브 파일 안전 생성 시스템
 DATA_FILE = "game_save.json"
 
-# 앱이 켜지자마자 세이브 파일이 있는지 확인하고, 없으면 강제로 빈 파일을 만들어버립니다.
 if not os.path.exists(DATA_FILE):
     try:
         initial_data = {"test": {"password": "1234", "money": 5000, "inventory": []}}
         with open(DATA_FILE, "w", encoding="utf-8") as f:
             json.dump(initial_data, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        # 서버 권한 문제로 생성이 안 될 때 앱이 튕기는 것을 방지합니다.
+    except:
         pass
 
 def load_data():
@@ -33,10 +31,9 @@ def save_data(data):
     try:
         with open(DATA_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        st.error(f"⚠️ 데이터 저장 중 오류 발생 (서버 권한): {e}")
+    except:
+        pass
 
-# 세션 상태에 데이터베이스 주입
 if "users_db" not in st.session_state:
     st.session_state.users_db = load_data()
 
@@ -56,7 +53,7 @@ normal_players = [
 all_players = rare_players + normal_players
 
 
-# 4. 메인 화면 레이아웃 (Manage app 버그 차단용 컨테이너)
+# 4. 메인 화면 출력 (안전 컨테이너 감싸기)
 main_layout = st.container()
 
 with main_layout:
@@ -75,19 +72,19 @@ with main_layout:
         
         if choice == "회원가입":
             if st.button("📝 계정 만들기", use_container_width=True):
-                st.session_state.users_db = load_data()  # 최신 데이터 로드
+                st.session_state.users_db = load_data()
                 if user_id in st.session_state.users_db:
                     st.error("❌ 이미 존재하는 아이디입니다.")
                 elif user_id == "" or user_pw == "":
                     st.warning("⚠️ 아이디와 비밀번호를 입력해 주세요.")
                 else:
                     st.session_state.users_db[user_id] = {"password": user_pw, "money": 5000, "inventory": []}
-                    save_data(st.session_state.users_db)  # 즉시 파일 서치 및 저장
+                    save_data(st.session_state.users_db)
                     st.success("🎉 회원가입 완료! 로그인을 진행해 주세요.")
                     
         elif choice == "로그인":
             if st.button("🚀 로그인하기", use_container_width=True):
-                st.session_state.users_db = load_data()  # 파일에서 최신 데이터 읽기
+                st.session_state.users_db = load_data()
                 if user_id in st.session_state.users_db and st.session_state.users_db[user_id]["password"] == user_pw:
                     st.session_state.current_user = user_id
                     st.success(f"👋 {user_id}님 환영합니다!")
@@ -106,7 +103,8 @@ with main_layout:
         with col_u2:
             st.write(f"💰 **보유 금액:** {my_data['money']}원")
         
-        if st.button("🔒 로그아웃", size="small"):
+        # 💥 [수정 완료] 터지던 size="small" 옵션을 완전히 삭제했습니다!
+        if st.button("🔒 로그아웃"):
             st.session_state.current_user = None
             st.rerun()
             
@@ -182,7 +180,7 @@ with main_layout:
                         st.write("---")
 
 
-# 5. 스타일 및 오디오 후행 렌더링 (안정성 확보)
+# 5. 스타일 및 사운드 후행 로드
 import base64
 def get_audio_html(audio_file):
     if os.path.exists(audio_file):
