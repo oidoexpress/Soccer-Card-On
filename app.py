@@ -4,8 +4,8 @@ import time
 import json
 import os
 
-# 1. 페이지 설정 (가장 먼저 실행)
-st.set_page_config(page_title="동네축구 카드 뽑기 게임", page_icon="⚽", layout="centered")
+# 1. 페이지 설정 (순정 상태로 안전하게 시작)
+st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽", layout="centered")
 
 # 2. 게임 세이브 파일 안전 생성 및 로드 시스템
 DATA_FILE = "game_save.json"
@@ -40,7 +40,7 @@ if "users_db" not in st.session_state:
 if "current_user" not in st.session_state:
     st.session_state.current_user = None
 
-# 3. 카드 데이터 정의 (3명 고정, 가격 유지)
+# 3. 카드 데이터 정의 (요청하신 3명 고정)
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🔥 전설 (10%)"}
 ]
@@ -53,38 +53,8 @@ normal_players = [
 all_players = rare_players + normal_players
 
 
-# 4. 안전한 다크 모드 스타일 주입 (로딩 멈춤 현상 없음)
-st.markdown("""
-    <style>
-    .stApp, [data-testid="stAppViewContainer"] {
-        background-color: #11141a !important;
-        color: #ece8e1 !important;
-    }
-    .stTextInput input {
-        color: #ece8e1 !important;
-        background-color: #232936 !important;
-        border: 1px solid #ff4655 !important;
-    }
-    .stTabs [data-baseweb="tab"] {
-        color: #677080 !important;
-    }
-    .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        color: #ff4655 !important;
-    }
-    .val-title {
-        font-size: 42px;
-        font-weight: 900;
-        color: #ff4655;
-        letter-spacing: 3px;
-        text-shadow: 0px 0px 10px rgba(255, 70, 85, 0.5);
-        margin-bottom: 5px;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-
-# 5. 메인 화면 출력
-st.markdown('<div class="val-title">⚽ 풋볼 카드 뽑기 매니저</div>', unsafe_allow_html=True)
+# 4. 메인 화면 출력 (약속하신 이름으로 변경 완료!)
+st.title("⚽ 동네 축구 카드 매니저")
 st.write("동네 축구 카드 뽑기 게임에 오신 것을 환영합니다.")
 st.write("---")
 
@@ -124,7 +94,7 @@ else:
     my_id = st.session_state.current_user
     my_data = st.session_state.users_db[my_id]
     
-    # 💥 [음성 연출 수리] 로그인 성공 시 안전한 방식으로 발로음성 자동 재생
+    # 로그인 성공 시 안전하게 발로음성 자동 재생
     if os.path.exists("loading.mp3"):
         st.audio("loading.mp3", format="audio/mp3", autoplay=True)
     
