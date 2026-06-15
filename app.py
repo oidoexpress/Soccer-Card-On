@@ -10,9 +10,8 @@ st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽",
 
 DATA_FILE = "game_save.json"
 
-# 💥 [핵심 수리] 서버 권한 에러를 완벽하게 우회하는 안전 데이터 로드 시스템
+# 안전 데이터 로드 시스템 (기존 계정 완벽 보존)
 if "users_db" not in st.session_state:
-    # 1단계: 깃허브에 만들어둔 json 파일을 안전하게 읽어옵니다.
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, "r", encoding="utf-8") as f:
@@ -25,13 +24,15 @@ if "users_db" not in st.session_state:
 if "current_user" not in st.session_state:
     st.session_state.current_user = None
 
-# 데이터 저장 함수 (서버 차단을 방지하기 위해 가상 저장 처리 후 세션 동시 유지)
+# 💥 [쿨타임 제어용 세션 초기화]
+if "draw_cooldown" not in st.session_state:
+    st.session_state.draw_cooldown = False
+
 def save_data():
     try:
         with open(DATA_FILE, "w", encoding="utf-8") as f:
             json.dump(st.session_state.users_db, f, ensure_ascii=False, indent=4)
     except:
-        # 서버가 파일 쓰기를 막아도 앱이 하얗게 튕기지 않고 브라우저 메모리로 안전하게 버티도록 방어합니다.
         pass
 
 # 2. 카드 데이터 정의 (요청하신 3명 고정)
@@ -46,15 +47,13 @@ normal_players = [
 
 all_players = rare_players + normal_players
 
-# 3. 메인 화면 타이틀 (동네 축구 카드 매니저)
+# 3. 메인 화면 타이틀
 st.title("⚽ 동네 축구 카드 매니저")
-st.write("동네 축구 카드 뽑기 게임에 오신 것을 환영합니다.")
 st.write("---")
 
-# 🔐 로그인 / 회원가입 폼 (하얀 화면 버그 완벽 차단)
+# 🔐 로그인 / 회원가입 폼
 if st.session_state.current_user is None:
     st.subheader("🔑 로그인 및 회원가입")
-    
     menu = ["로그인", "회원가입"]
     choice = st.radio("원하는 작업을 선택하세요", menu, horizontal=True)
     
@@ -106,14 +105,25 @@ else:
         st.subheader("🎯 동네 축구 일반 카드 팩")
         st.write("💰 **1회 뽑기 비용:** 1,000원")
         
-        if st.button("🔥 카드 팩 오픈! (1,000원 결제)", type="primary", use_container_width=True):
+        # 💥 실시간으로 생겼다 사라질 연출 상자들을 미리 대기시킵니다.
+        result_box = st.empty()  # 텍스트 알림용 상자
+        image_box = st.empty()   # 사진 출력용 상자
+        cooldown_box = st.empty() # 쿨타임 타이머 표시용 상자
+        
+        # 💥 5초 쿨타임 중일 때는 버튼을 자동으로 비활성화(disabled=True) 시킵니다.
+        button_label = "⏳ 쿨타임 대기 중..." if st.session_state.draw_cooldown else "🔥 카드 팩 오픈! (1,000원 결제)"
+        
+        if st.button(button_label, type="primary", use_container_width=True, disabled=st.session_state.draw_cooldown):
             if my_data["money"] < 1000:
                 st.error("❌ 잔액이 부족합니다!")
             else:
+                # 금액 차감 및 데이터 보존
                 st.session_state.users_db[my_id]["money"] -= 1000
+                save_data()
                 
+                # 팩 오픈 애니메이션
                 with st.spinner("⚡ 카드 팩을 뜯는 중..."):
-                    time.sleep(1.2)
+                    time.sleep(1.0)
                     percentage = random.randint(1, 100)
                     if percentage <= 10:
                         lucky_player = random.choice(rare_players)
@@ -121,16 +131,35 @@ else:
                     else:
                         lucky_player = random.choice(normal_players)
                 
-                st.success(f"🎉 **[{lucky_player['grade']}] {lucky_player['name']}** 선수를 뽑았습니다!")
+                # 인벤토리에 선수 추가 및 저장
                 st.session_state.users_db[my_id]["inventory"].append(lucky_player["name"])
                 save_data()
                 
-                col_c1, col_c2, col_c3 = st.columns([1, 2, 1])
-                with col_c2:
-                    try:
-                        st.image(lucky_player['image'], use_container_width=True)
-                    except:
-                        st.error(f"❌ '{lucky_player['image']}' 이미지를 불러오지 못했습니다.")
+                # 💥 1. 대기 상자에 결과 텍스트와 이미지 동시 노출!
+                result_box.success(f"🎉 **[{lucky_player['grade']}] {lucky_player['name']}** 선수를 뽑았습니다!")
+                with image_box.container():
+                    col_c1, col_c2, col_c3 = st.columns([1, 2, 1])
+                    with col_c2:
+                        try:
+                            st.image(lucky_player['image'], use_container_width=True)
+                        except:
+                            st.error(f"❌ '{lucky_player['image']}' 이미지를 불러오지 못했습니다.")
+                
+                # 💥 2. 뽑기가 끝난 직후 즉시 쿨타임 락을 겁니다.
+                st.session_state.draw_cooldown = True
+                
+                # 💥 3. 사진 유지 및 쿨타임 카운트다운 (5초간 실시간 진행)
+                for i in range(5, 0, -1):
+                    cooldown_box.warning(f"⏱️ 다음 뽑기까지 남은 시간: {i}초 (이 창은 5초 뒤 정리됩니다)")
+                    time.sleep(1)
+                
+                # 💥 4. 5초가 지나면 화면에서 결과 텍스트와 사진을 싹 지워버립니다.
+                result_box.empty()
+                image_box.empty()
+                cooldown_box.empty()
+                
+                # 💥 5. 쿨타임 해제 후 화면을 리프레시하여 다시 버튼을 활성화합니다.
+                st.session_state.draw_cooldown = False
                 st.rerun()
                 
     # --- [탭 2: 내 소장고 & 판매] ---
