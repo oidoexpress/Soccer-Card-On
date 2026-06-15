@@ -22,7 +22,7 @@ if "draw_result" not in st.session_state:
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 💥 카드 데이터 정의 (새로운 UCL 카드 2종 추가 완료!)
+# 2. 카드 데이터 정의
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL (10%)"},
     {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 45000, "grade": "🏆 UCL (10%)"},
@@ -114,10 +114,17 @@ else:
         
         is_cooling = False
         current_ts = time.time()
+        
+        # 실시간 쿨타임 시스템 검사
         if st.session_state.cooldown_time > current_ts:
             is_cooling = True
             rem_time = int(st.session_state.cooldown_time - current_ts)
-            btn_text = f"⏳ UCL 카드 당첨! 쿨타임 대기 중... ({rem_time}초)"
+            
+            # 💥 등급에 따라 버튼 메시지 분기 처리
+            if st.session_state.draw_result and "UCL" in st.session_state.draw_result["grade"]:
+                btn_text = f"⏳ UCL 카드 당첨! 쿨타임 대기 중... ({rem_time}초)"
+            else:
+                btn_text = f"⏳ 쿨타임 대기 중... ({rem_time}초)"
         else:
             btn_text = "🔥 카드 팩 오픈! (1,000원 결제)"
             st.session_state.draw_result = None
@@ -134,7 +141,7 @@ else:
                     time.sleep(0.8)
                     percentage = random.randint(1, 100)
                     if percentage <= 10:
-                        lucky_player = random.choice(rare_players) # 이제 3명 중 무작위 추첨!
+                        lucky_player = random.choice(rare_players)
                         is_ucl = True
                     else:
                         lucky_player = random.choice(normal_players)
@@ -143,20 +150,34 @@ else:
                 st.session_state.users_backup_db[my_id]["inventory"].append(lucky_player["name"])
                 st.session_state.draw_result = lucky_player
                 
-                # UCL 등급 당첨 시 비디오 재생 및 20초 쿨타임 적용
+                # UCL 등급 전용 비디오 및 20초 잠금
                 if is_ucl:
                     if os.path.exists("uclcard.mp4"):
-                        video_placeholder.video("uclcard.mp4", format="video/mp4", autoplay=True)
+                        try:
+                            with open("uclcard.mp4", "rb") as video_file:
+                                video_bytes = video_file.read()
+                            video_base64 = base64.b64encode(video_bytes).decode()
+                            
+                            video_html = f'''
+                                <video autoplay playsinline style="width:100%; max-width:100%; border-radius:10px;">
+                                    <source src="data:video/mp4;base64,{video_base64}" type="video/mp4">
+                                </video>
+                            '''
+                            video_placeholder.markdown(video_html, unsafe_allow_html=True)
+                        except:
+                            pass
+                        
                         time.sleep(5.0) 
                         video_placeholder.empty()
                     st.balloons()
-                    st.session_state.cooldown_time = time.time() + 20
+                    st.session_state.cooldown_time = time.time() + 20 # UCL 카드는 20초 잠금
                 else:
-                    st.session_state.cooldown_time = time.time() + 0 
+                    # 💥 [수정 핵심] KICK-OFF 등급 카드는 쿨타임과 사진 노출 포함 총 3초 잠금!
+                    st.session_state.cooldown_time = time.time() + 3
                 
                 st.rerun()
                 
-        # 쿨타임 동안 화면 고정 연출존
+        # 쿨타임 동안 카드 사진 및 정보 고정 노출존
         if is_cooling and st.session_state.draw_result:
             p_res = st.session_state.draw_result
             st.success(f"🎉 **[{p_res['grade']}] {p_res['name']}** 선수를 뽑았습니다!")
@@ -210,4 +231,4 @@ if os.path.exists("loading.mp3"):
             audio_base64 = base64.b64encode(f.read()).decode()
         st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{audio_base64}" style="display:none;"></audio>', unsafe_allow_html=True)
     except:
-        pass
+        pass 
