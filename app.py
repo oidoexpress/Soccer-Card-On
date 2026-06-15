@@ -7,8 +7,7 @@ import base64
 # 1. 페이지 설정
 st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽", layout="centered")
 
-# 💥 [계정 유실 저주 완벽 해제] 
-# 서버 파일 쓰기를 완전히 차단당했으므로, 브라우저가 살아있는 한 절대 안 날아가는 대피용 세션 메모리 데이터베이스를 구축합니다.
+# 계정 유실 방지 가상 메모리 데이터베이스
 if "users_backup_db" not in st.session_state:
     st.session_state.users_backup_db = {
         "test": {"password": "1234", "money": 10000, "inventory": []}
@@ -23,9 +22,11 @@ if "draw_result" not in st.session_state:
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 카드 데이터 정의 (KICK-OFF 및 UCL 등급)
+# 2. 💥 카드 데이터 정의 (새로운 UCL 카드 2종 추가 완료!)
 rare_players = [
-    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL (10%)"}
+    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL (10%)"},
+    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 45000, "grade": "🏆 UCL (10%)"},
+    {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 45000, "grade": "🏆 UCL (10%)"}
 ]
 
 normal_players = [
@@ -35,7 +36,7 @@ normal_players = [
 
 all_players = rare_players + normal_players
 
-# 3. 안전한 스크롤 스타일 지정
+# 3. 부드러운 스크롤 스타일 지정
 st.markdown("""
     <style>
     .stTextInput input {
@@ -56,7 +57,7 @@ st.markdown("""
 st.title("⚽ 동네 축구 카드 매니저")
 st.write("---")
 
-# 🔐 로그인 / 회원가입 폼 (가입 즉시 증발 없이 바로 로그인 가능!)
+# 🔐 로그인 / 회원가입 폼
 if st.session_state.current_user is None:
     st.subheader("🔑 로그인 및 회원가입")
     menu = ["로그인", "회원가입"]
@@ -74,7 +75,6 @@ if st.session_state.current_user is None:
                 elif user_id == "" or user_pw == "":
                     st.warning("⚠️ 아이디와 비밀번호를 입력해 주세요.")
                 else:
-                    # 파일이 아닌 가상 메모리에 즉시 박제하여 날아가는 현상 전면 차단
                     st.session_state.users_backup_db[user_id] = {"password": user_pw, "money": 10000, "inventory": []}
                     st.success("🎉 회원가입 완료! 이제 바로 로그인을 선택하고 버튼을 눌러주세요.")
                     
@@ -84,9 +84,9 @@ if st.session_state.current_user is None:
                     st.success(f"👋 {user_id}님 환영합니다!")
                     st.rerun()
                 else:
-                    st.error("❌ 아이디 또는 비밀번호가 틀렸습니다. (방금 가입하셨다면 아이디를 다시 확인해 주세요)")
+                    st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
 
-# 🕹️ 게임 메인 화면 (로그인 후)
+# 🕹️ 게임 메인 화면
 else:
     my_id = st.session_state.current_user
     my_data = st.session_state.users_backup_db[my_id]
@@ -112,7 +112,6 @@ else:
         st.subheader("🎯 동네 축구 일반 카드 팩")
         st.write("💰 **1회 뽑기 비용:** 1,000원")
         
-        # 실시간 쿨타임 체크 대기장치
         is_cooling = False
         current_ts = time.time()
         if st.session_state.cooldown_time > current_ts:
@@ -135,26 +134,24 @@ else:
                     time.sleep(0.8)
                     percentage = random.randint(1, 100)
                     if percentage <= 10:
-                        lucky_player = random.choice(rare_players)
+                        lucky_player = random.choice(rare_players) # 이제 3명 중 무작위 추첨!
                         is_ucl = True
                     else:
                         lucky_player = random.choice(normal_players)
                         is_ucl = False
                 
-                # 인벤토리에 선수 추가
                 st.session_state.users_backup_db[my_id]["inventory"].append(lucky_player["name"])
                 st.session_state.draw_result = lucky_player
                 
-                # 💥 [수정 핵심] UCL 등급이 나왔을 때만 비디오 틀고 '20초' 쿨타임 적용!
+                # UCL 등급 당첨 시 비디오 재생 및 20초 쿨타임 적용
                 if is_ucl:
                     if os.path.exists("uclcard.mp4"):
                         video_placeholder.video("uclcard.mp4", format="video/mp4", autoplay=True)
                         time.sleep(5.0) 
                         video_placeholder.empty()
                     st.balloons()
-                    st.session_state.cooldown_time = time.time() + 20 # UCL 카드는 20초 락!!
+                    st.session_state.cooldown_time = time.time() + 20
                 else:
-                    # KICK-OFF 카드는 쿨타임 없이 바로 다음 뽑기 가능하도록 0초 설정
                     st.session_state.cooldown_time = time.time() + 0 
                 
                 st.rerun()
