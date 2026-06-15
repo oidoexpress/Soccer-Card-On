@@ -5,23 +5,21 @@ import json
 import base64
 
 # 1. 페이지 설정 및 스크롤 버그 방지 CSS
-st.set_page_config(page_title="축구 카드 뽑기 게임", page_icon="⚽", layout="centered")
+st.set_page_config(page_title="동네축구 카드 뽑기 게임", page_icon="⚽", layout="centered")
 
-# 💥 [음악 파일 읽어오기]
-# loading.mp3 파일을 시스템이 읽을 수 있게 변환합니다.
+# [음악 파일 읽어오기]
 def get_audio_html(audio_file):
     try:
         with open(audio_file, "rb") as f:
             audio_bytes = f.read()
         audio_base64 = base64.b64encode(audio_bytes).decode()
-        # autoplay를 넣어서 브라우저 잠금이 풀리면 바로 재생되게 만듭니다.
         return f'<audio autoplay src="data:audio/mp3;base64,{audio_base64}">'
     except FileNotFoundError:
         return ""
 
 audio_html = get_audio_html("loading.mp3")
 
-# 💥 [발로란트 인트로 로딩 연출 CSS + 오디오 인젝션]
+# [발로란트 인트로 로딩 연출 CSS + 오디오 인젝션]
 st.markdown(f"""
     <style>
     .stApp {{
@@ -43,7 +41,7 @@ st.markdown(f"""
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        animation: fadeOut 0.5s ease-in-out 3.5s forwards; /* 음악을 조금 더 듣기 위해 3.5초로 연장 */
+        animation: fadeOut 0.5s ease-in-out 3.5s forwards;
     }}
     
     .valorant-logo {{
@@ -118,17 +116,14 @@ if "users_db" not in st.session_state:
 if "current_user" not in st.session_state:
     st.session_state.current_user = None
 
-# 3. 카드 데이터 정의 (수정하신 가격 정보는 이 리스트 안에서 직접 변경하시면 됩니다!)
+# 3. 💥 카드 데이터 정정 (마크롱, 노무현, 안창혁만 유지) 💥
 rare_players = [
-    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🔥 전설 (10%)"},
-    {"name": "이현 UCL", "image": "UEFA Champions League 24 STAR 이현.png", "sell_price": 50000, "grade": "🔥 전설 (10%)"}
+    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🔥 전설 (10%)"}
 ]
 
 normal_players = [
     {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "일반 (90%)"},
-    {"name": "권태희", "image": "권태희.png", "sell_price": 1000, "grade": "일반 (90%)"},
-    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "일반 (90%)"},
-    {"name": "이현", "image": "이현.png", "sell_price": 1000, "grade": "일반 (90%)"}
+    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "일반 (90%)"}
 ]
 
 all_players = rare_players + normal_players
@@ -137,7 +132,7 @@ all_players = rare_players + normal_players
 main_container = st.container()
 
 with main_container:
-    st.title("⚽ 풋볼 카드 뽑기 매니저 게임")
+    st.title("⚽동네축구 카드 뽑기 매니저 게임")
 
     # 🔐 로그인 / 회원가입 화면
     if st.session_state.current_user is None:
@@ -191,7 +186,7 @@ with main_container:
         
         # --- [탭 1: 카드 뽑기] ---
         with tab1:
-            st.subheader("🎯 대박 축구 카드 팩")
+            st.subheader("🎯 동네 축구 일반 카드 팩")
             st.write("💰 **1회 뽑기 비용:** 1,000원")
             
             if st.button("🔥 카드 팩 오픈! (1,000원 결제)", type="primary", use_container_width=True):
@@ -254,5 +249,5 @@ with main_container:
                             try:
                                 st.image(p_info['image'], width=150)
                             except:
-                                p_info_sell_check = "이미지가 존재하지 않습니다."
+                                st.write("이미지가 존재하지 않습니다.")
                         st.write("---")
