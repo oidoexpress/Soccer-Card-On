@@ -34,7 +34,7 @@ if "draw_result" not in st.session_state:
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 카드 데이터 정의 (💥 호날두 선수 새롭게 추가!)
+# 2. 카드 데이터 정의
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL"},
     {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL"},
@@ -48,9 +48,17 @@ normal_players = [
     {"name": "크리스티아누 호날두", "image": "KICK OFF 21 크리스티아누 호날두.webp", "sell_price": 1000, "grade": "🏃 KICK-OFF"}
 ]
 
-all_players = rare_players + normal_players
+# 💥 [신규 등급] TOTS 손흥민 전용 카드 데이터
+tots_son_players = [
+    {"name": "22TOTS 손흥민", "image": "22TOTS 손흥민.webp", "sell_price": 80000, "grade": "🔥 TOTS"},
+    {"name": "23TOTS MOMENT 손흥민", "image": "23TOTS MOMENT 손흥민.webp", "sell_price": 95000, "grade": "🔥 TOTS"},
+    {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS"}
+]
 
-# 3. [패드/모바일 스크롤 버그 해결 스타일 포함]
+# 전체 선수 동기화 (소장고 노출용)
+all_players = rare_players + normal_players + tots_son_players
+
+# 3. 스타일 및 스크롤 패치
 st.markdown("""
     <style>
     html, body, [data-testid="stAppViewContainer"] {
@@ -65,7 +73,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 비디오 재생 로직
+# 비디오 재생 로직 (UCL 및 TOTS 연출 통합 사용)
 def play_ucl_video():
     video_placeholder = st.empty()
     if os.path.exists("uclcard.mp4"):
@@ -120,7 +128,7 @@ else:
     my_id = st.session_state.current_user
     my_data = users_db[my_id]
     
-    # 사이드바 영역
+    # 사이드바 영역 (내 정보 및 소장고)
     with st.sidebar:
         st.header("⚽ 매니저 센터")
         st.write(f"👤 **유저:** {my_id}님")
@@ -162,7 +170,7 @@ else:
                             st.write("이미지 없음")
                     st.write("---")
 
-    # 메인 화면
+    # 메인 화면 (상점)
     st.title("🛒 카드 팩 상점")
     st.write("---")
     
@@ -174,7 +182,7 @@ else:
     else:
         st.session_state.draw_result = None
 
-    # 일반 카드 팩
+    # --- 1번 팩: 일반 카드 팩 ---
     st.markdown("### 🎯 동네 축구 일반 카드 팩")
     st.write("💵 **비용:** 1,000원 | 📊 **확률:** KICK-OFF (90%), UCL (10%)")
     
@@ -189,16 +197,16 @@ else:
                 percentage = random.randint(1, 100)
                 if percentage <= 10:
                     lucky_player = random.choice(rare_players)
-                    is_ucl = True
+                    is_special = True
                 else:
                     lucky_player = random.choice(normal_players)
-                    is_ucl = False
+                    is_special = False
             
             users_db[my_id]["inventory"].append(lucky_player["name"])
             save_db(users_db)
             st.session_state.draw_result = lucky_player
             
-            if is_ucl:
+            if is_special:
                 play_ucl_video()
                 st.session_state.cooldown_time = time.time() + 20
             else:
@@ -207,9 +215,9 @@ else:
 
     st.write("---")
 
-    # UCL 전용 프리미엄 팩
+    # --- 2번 팩: UCL 전용 프리미엄 팩 ---
     st.markdown("### 🏆 UCL 전용 프리미엄 팩")
-    st.write("💵 **비용:** 50,000원 | 📊 **확률:** **UCL 등급 카드 100% 확정 등장!**")
+    st.write("💵 **비용:** 50,000원 | 📊 **확률:** UCL 등급 카드 100% 확정 등장!")
     
     btn_text_ucl = f"⏳ UCL 당첨 연출 대기 중... ({rem_time}초)" if is_cooling else "✨ UCL 전용 팩 오픈! (50,000원)"
     if st.button(btn_text_ucl, key="btn_ucl_pack", type="primary", use_container_width=True, disabled=is_cooling):
@@ -229,6 +237,33 @@ else:
             st.session_state.cooldown_time = time.time() + 20
             st.rerun()
             
+    st.write("---")
+
+    # --- 💥 3번 팩: 손흥민 스페셜 팩 (신설!) ---
+    st.markdown("### 🔥 손흥민 TOTS 스페셜 프리미엄 팩")
+    st.write("💵 **비용:** 100,000원 | 📊 **확률:** **손흥민 TOTS 한정판 카드 100% 확정 등장!**")
+    
+    btn_text_son = f"⏳ 손흥민 소환 연출 대기 중... ({rem_time}초)" if is_cooling else "🇰🇷 손흥민 스페셜 팩 오픈! (100,000원)"
+    if st.button(btn_text_son, key="btn_son_pack", type="primary", use_container_width=True, disabled=is_cooling):
+        if my_data["money"] < 100000:
+            st.sidebar.error("❌ 잔액이 부족합니다!")
+        else:
+            users_db[my_id]["money"] -= 100000
+            with st.spinner("⚡ 대한민국 레전드 손흥민 카드 오픈 중..."):
+                time.sleep(0.6)
+                # 오직 TOTS 등급 리스트에서만 랜덤 추출
+                lucky_player = random.choice(tots_son_players)
+            
+            users_db[my_id]["inventory"].append(lucky_player["name"])
+            save_db(users_db)
+            st.session_state.draw_result = lucky_player
+            
+            # 레전드 등급이므로 20초 연출 발동
+            play_ucl_video()
+            st.session_state.cooldown_time = time.time() + 20
+            st.rerun()
+
+    # 결과물 중앙 화면에 노출
     if is_cooling and st.session_state.draw_result:
         st.write("---")
         p_res = st.session_state.draw_result
