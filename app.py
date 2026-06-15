@@ -5,7 +5,7 @@ import json
 import os
 import base64
 
-# 1. 페이지 설정 (가장 먼저 실행)
+# 1. 페이지 설정
 st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽", layout="centered")
 
 DATA_FILE = "game_save.json"
@@ -37,23 +37,22 @@ def save_data():
     except:
         pass
 
-# 2. 카드 데이터 정의 (3명 고정)
+# 2. 💥 카드 데이터 등급 수정 (전설 ❌ -> UCL 및 KICK-OFF 등급으로 변경)
 rare_players = [
-    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🔥 전설 (10%)"}
+    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL (10%)"}
 ]
 
 normal_players = [
-    {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "일반 (90%)"},
-    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "일반 (90%)"}
+    {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "🏃 KICK-OFF (90%)"},
+    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "🏃 KICK-OFF (90%)"}
 ]
 
 all_players = rare_players + normal_players
 
 
-# 3. 💥 [수정 핵심] 스크롤을 막아버리던 렉 유발 CSS 제거 후 안전한 스타일만 남김
+# 3. 안전한 스타일 지정 (세로 스크롤 완벽 보장)
 st.markdown("""
     <style>
-    /* 스크롤 먹통을 유발하던 overflow 관련 코드를 전면 삭제했습니다 */
     .stTextInput input {
         color: #ece8e1 !important;
         background-color: #232936 !important;
@@ -129,7 +128,7 @@ else:
         st.subheader("🎯 동네 축구 일반 카드 팩")
         st.write("💰 **1회 뽑기 비용:** 1,000원")
         
-        # 실시간 쿨타임 체크 (남은 시간이 있으면 버튼 잠금)
+        # 실시간 쿨타임 체크
         is_cooling = False
         current_ts = time.time()
         if st.session_state.cooldown_time > current_ts:
@@ -138,7 +137,7 @@ else:
             btn_text = f"⏳ 쿨타임 대기 중... ({rem_time}초)"
         else:
             btn_text = "🔥 카드 팩 오픈! (1,000원 결제)"
-            st.session_state.draw_result = None # 쿨타임 끝나면 뽑기창 클리어
+            st.session_state.draw_result = None
             
         if st.button(btn_text, type="primary", use_container_width=True, disabled=is_cooling):
             if my_data["money"] < 1000:
@@ -147,25 +146,39 @@ else:
                 st.session_state.users_db[my_id]["money"] -= 1000
                 save_data()
                 
+                # 영상 재생 연출존 미리 마련
+                video_placeholder = st.empty()
+                
                 with st.spinner("⚡ 카드 팩을 뜯는 중..."):
                     time.sleep(1.0)
                     percentage = random.randint(1, 100)
                     if percentage <= 10:
                         lucky_player = random.choice(rare_players)
-                        st.balloons()
+                        is_ucl = True
                     else:
                         lucky_player = random.choice(normal_players)
+                        is_ucl = False
                 
-                # 데이터 인벤에 추가 후 저장
+                # 💥 [수정 핵심] UCL 등급 카드가 나오면 비디오 전송 및 재생 처리
+                if is_ucl:
+                    if os.path.exists("uclcard.mp4"):
+                        # autoplay=True로 유저가 누르지 않아도 비디오가 즉시 나옵니다.
+                        video_placeholder.video("uclcard.mp4", format="video/mp4", autoplay=True)
+                        # 영상이 끝날 때까지 (원하는 시간만큼 지정 가능, 기본 5초 대기) 화면을 붙잡아둡니다.
+                        time.sleep(5.0) 
+                        video_placeholder.empty() # 재생 완료 후 비디오 상자 청소
+                    st.balloons()
+                
+                # 인벤토리에 보존 및 세이브
                 st.session_state.users_db[my_id]["inventory"].append(lucky_player["name"])
                 save_data()
                 
-                # 결과 세션에 저장 및 5초 뒤 시간 세팅
+                # 결과 임시 보관 및 5초 잠금설정
                 st.session_state.draw_result = lucky_player
                 st.session_state.cooldown_time = time.time() + 5
                 st.rerun()
                 
-        # 💥 [버그 수정] 5초 동안 뽑은 카드 사진과 카운트다운을 유지해서 띄워주는 연출존
+        # 5초 동안 사진 노출 및 카운트다운 가동
         if is_cooling and st.session_state.draw_result:
             p_res = st.session_state.draw_result
             st.success(f"🎉 **[{p_res['grade']}] {p_res['name']}** 선수를 뽑았습니다!")
@@ -177,7 +190,6 @@ else:
                 except:
                     st.error(f"❌ '{p_res['image']}' 이미지를 불러오지 못했습니다.")
             
-            # 실시간 카운트다운 새로고침 시동장치
             time.sleep(1)
             st.rerun()
 
@@ -214,7 +226,7 @@ else:
                             st.write("이미지가 존재하지 않습니다.")
                     st.write("---")
 
-# 5. 🔊 안전한 자동 재생 오디오 인젝션
+# 5. 🔊 로그인 시 기본 오디오 인젝션 (기존 유지)
 if os.path.exists("loading.mp3"):
     try:
         with open("loading.mp3", "rb") as f:
