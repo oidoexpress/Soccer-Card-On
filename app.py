@@ -102,7 +102,7 @@ all_players = rare_players + normal_players
 
 
 # 4. 메인 화면 안전하게 빌드 (Manage app 안 눌러도 즉시 로딩되도록 강제 주입)
-st.markdown('<div class="val-title">⚽ 풋볼 카드 뽑기 매니저</div>', unsafe_allow_html=True)
+st.markdown('<div class="val-title">⚽ 동네 축구 카드 뽑기 </div>', unsafe_allow_html=True)
 st.write("동네 축구 카드 뽑기 게임에 오신 것을 환영합니다.")
 st.write("---")
 
