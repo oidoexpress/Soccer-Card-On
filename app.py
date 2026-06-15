@@ -8,32 +8,27 @@ import json
 # 1. 페이지 설정
 st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽", layout="wide")
 
-# 💥 [진짜 게임 저장 시스템] 영구 파일 DB 로드/세이브 함수
+# [영구 파일 DB 로드/세이브]
 DB_FILE = "database.json"
 
 def load_db():
-    """서버 파일에서 유저 데이터 전체를 불러옵니다."""
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except:
             pass
-    # 파일이 없거나 깨졌을 때 기본값 (테스트 계정 기본 생성)
     return {"test": {"password": "1234", "money": 10000, "inventory": []}}
 
 def save_db(db_data):
-    """유저 데이터를 서버 파일에 즉시 영구 저장합니다."""
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(db_data, f, ensure_ascii=False, indent=4)
 
-# 실시간 파일 동기화 진행
 users_db = load_db()
 
 if "current_user" not in st.session_state:
     st.session_state.current_user = None
 
-# 뽑기 결과 및 쿨타임 기억장치
 if "draw_result" not in st.session_state:
     st.session_state.draw_result = None
 if "cooldown_time" not in st.session_state:
@@ -54,9 +49,14 @@ normal_players = [
 
 all_players = rare_players + normal_players
 
-# 3. 스타일 지정
+# 3. 💥 [패드/모바일 스크롤 버그 해결] 강제 스크롤 및 터치 허용 CSS 적용
 st.markdown("""
     <style>
+    /* 아이패드/모바일 크롬에서 터치 세로 스크롤을 절대 막지 못하도록 강제 주입 */
+    html, body, [data-testid="stAppViewContainer"] {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important; /* iOS 크롬/사파리 부드러운 터치 스크롤 */
+    }
     .stTextInput input {
         color: #ece8e1 !important;
         background-color: #232936 !important;
@@ -65,7 +65,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 비디오 즉시 재생 로직
+# 비디오 재생 로직
 def play_ucl_video():
     video_placeholder = st.empty()
     if os.path.exists("uclcard.mp4"):
@@ -85,7 +85,7 @@ def play_ucl_video():
         video_placeholder.empty()
     st.balloons()
 
-# 4. 로그인 화면 및 메인 게임 분기
+# 4. 로그인 화면 및 게임 분기
 if st.session_state.current_user is None:
     st.title("⚽ 동네 축구 카드 매니저")
     st.write("---")
@@ -105,11 +105,9 @@ if st.session_state.current_user is None:
                 elif user_id == "" or user_pw == "":
                     st.warning("⚠️ 아이디와 비밀번호를 입력해 주세요.")
                 else:
-                    # 파일 데이터베이스에 추가 및 세이브
                     users_db[user_id] = {"password": user_pw, "money": 10000, "inventory": []}
                     save_db(users_db)
                     st.success("🎉 회원가입 완료! 로그인을 선택하고 다시 눌러주세요.")
-                    
             elif choice == "로그인":
                 if user_id in users_db and users_db[user_id]["password"] == user_pw:
                     st.session_state.current_user = user_id
@@ -118,13 +116,11 @@ if st.session_state.current_user is None:
                 else:
                     st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
 
-# 🕹️ 게임 메인 화면 (로그인 완료 상태)
 else:
     my_id = st.session_state.current_user
-    # 매 프레임마다 파일에서 최신 정보를 새로고침하여 불러옴
     my_data = users_db[my_id]
     
-    # 왼쪽 사이드바 영역에 내 정보 및 소장고 메뉴 고정
+    # 사이드바 영역
     with st.sidebar:
         st.header("⚽ 매니저 센터")
         st.write(f"👤 **유저:** {my_id}님")
@@ -137,7 +133,6 @@ else:
             st.rerun()
             
         st.write("---")
-        
         st.subheader("🎒 내 소장고 & 판매")
         my_inv = my_data["inventory"]
         
@@ -155,10 +150,8 @@ else:
                         st.write(f"💵 {p_info['sell_price']:,}원")
                     with col_i2:
                         if st.button("💰 판매", key=f"sell_{item}"):
-                            # 카드 인벤토리에서 제거 및 판매 대금 추가
                             users_db[my_id]["inventory"].remove(item)
                             users_db[my_id]["money"] += p_info["sell_price"]
-                            # 파일 저장 필수!
                             save_db(users_db)
                             st.rerun()
                     
@@ -169,7 +162,7 @@ else:
                             st.write("이미지 없음")
                     st.write("---")
 
-    # 🎯 [우측 메인 화면 구역] 카드 팩 상점 노출
+    # 메인 화면
     st.title("🛒 카드 팩 상점")
     st.write("---")
     
@@ -181,7 +174,7 @@ else:
     else:
         st.session_state.draw_result = None
 
-    # --- 1번 팩: 일반 카드 팩 (KICK-OFF 90% / UCL 10%) ---
+    # 일반 카드 팩
     st.markdown("### 🎯 동네 축구 일반 카드 팩")
     st.write("💵 **비용:** 1,000원 | 📊 **확률:** KICK-OFF (90%), UCL (10%)")
     
@@ -201,7 +194,6 @@ else:
                     lucky_player = random.choice(normal_players)
                     is_ucl = False
             
-            # 획득한 카드 파일 DB에 영구 백업
             users_db[my_id]["inventory"].append(lucky_player["name"])
             save_db(users_db)
             st.session_state.draw_result = lucky_player
@@ -215,7 +207,7 @@ else:
 
     st.write("---")
 
-    # --- 2번 팩: UCL 전용 프리미엄 팩 (UCL 100%) ---
+    # UCL 전용 프리미엄 팩
     st.markdown("### 🏆 UCL 전용 프리미엄 팩")
     st.write("💵 **비용:** 50,000원 | 📊 **확률:** **UCL 등급 카드 100% 확정 등장!**")
     
@@ -229,7 +221,6 @@ else:
                 time.sleep(0.6)
                 lucky_player = random.choice(rare_players)
             
-            # 파일 DB에 영구 백업
             users_db[my_id]["inventory"].append(lucky_player["name"])
             save_db(users_db)
             st.session_state.draw_result = lucky_player
@@ -238,7 +229,6 @@ else:
             st.session_state.cooldown_time = time.time() + 20
             st.rerun()
             
-    # 쿨타임 동안 메인 화면 중앙에 카드 사진 노출
     if is_cooling and st.session_state.draw_result:
         st.write("---")
         p_res = st.session_state.draw_result
@@ -254,7 +244,6 @@ else:
         time.sleep(1)
         st.rerun()
 
-# 5. 오디오 인젝션
 if os.path.exists("loading.mp3"):
     try:
         with open("loading.mp3", "rb") as f:
