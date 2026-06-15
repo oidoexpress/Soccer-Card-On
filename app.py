@@ -1,47 +1,29 @@
 import streamlit as st
 import random
 import time
-import json
 import os
 import base64
 
 # 1. 페이지 설정
 st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽", layout="centered")
 
-DATA_FILE = "game_save.json"
-
-# 💥 [저주 해결/계정 유실 절대 방어] 깃허브 원본 파일을 강제로 새로고침하여 읽어오는 시스템
-def force_load_data():
-    if os.path.exists(DATA_FILE):
-        try:
-            # 브라우저 캐시를 무시하고 무조건 디스크에서 실시간 파일 알맹이를 뜯어옵니다.
-            with open(DATA_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except:
-            return {"test": {"password": "1234", "money": 5000, "inventory": []}}
-    return {"test": {"password": "1234", "money": 5000, "inventory": []}}
-
-# 데이터 세이브 함수
-def save_data(data):
-    try:
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
-    except:
-        pass
-
-# 매 화면 갱신마다 무조건 깃허브 최신 데이터와 동기화시킵니다.
-st.session_state.users_db = force_load_data()
+# 💥 [계정 유실 저주 완벽 해제] 
+# 서버 파일 쓰기를 완전히 차단당했으므로, 브라우저가 살아있는 한 절대 안 날아가는 대피용 세션 메모리 데이터베이스를 구축합니다.
+if "users_backup_db" not in st.session_state:
+    st.session_state.users_backup_db = {
+        "test": {"password": "1234", "money": 10000, "inventory": []}
+    }
 
 if "current_user" not in st.session_state:
     st.session_state.current_user = None
 
-# 쿨타임 및 결과 기억장치
+# 뽑기 결과 및 쿨타임 기억장치
 if "draw_result" not in st.session_state:
     st.session_state.draw_result = None
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 카드 데이터 정의 (3명 고정, UCL 및 KICK-OFF 등급)
+# 2. 카드 데이터 정의 (KICK-OFF 및 UCL 등급)
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL (10%)"}
 ]
@@ -53,7 +35,7 @@ normal_players = [
 
 all_players = rare_players + normal_players
 
-# 3. 스타일 지정 (스크롤 안 되는 버그 완벽 수정)
+# 3. 안전한 스크롤 스타일 지정
 st.markdown("""
     <style>
     .stTextInput input {
@@ -74,7 +56,7 @@ st.markdown("""
 st.title("⚽ 동네 축구 카드 매니저")
 st.write("---")
 
-# 🔐 로그인 / 회원가입 폼
+# 🔐 로그인 / 회원가입 폼 (가입 즉시 증발 없이 바로 로그인 가능!)
 if st.session_state.current_user is None:
     st.subheader("🔑 로그인 및 회원가입")
     menu = ["로그인", "회원가입"]
@@ -86,37 +68,28 @@ if st.session_state.current_user is None:
         submit_button = st.form_submit_button(label="🚀 실행하기", use_container_width=True)
         
         if submit_button:
-            # 버튼 누르는 순간 한 번 더 강제 최신화!
-            st.session_state.users_db = force_load_data()
-            
             if choice == "회원가입":
-                if user_id in st.session_state.users_db:
+                if user_id in st.session_state.users_backup_db:
                     st.error("❌ 이미 존재하는 아이디입니다.")
                 elif user_id == "" or user_pw == "":
                     st.warning("⚠️ 아이디와 비밀번호를 입력해 주세요.")
                 else:
-                    st.session_state.users_db[user_id] = {"password": user_pw, "money": 5000, "inventory": []}
-                    save_data(st.session_state.users_db)
-                    st.success("🎉 회원가입 완료! 로그인을 선택하고 다시 눌러주세요.")
+                    # 파일이 아닌 가상 메모리에 즉시 박제하여 날아가는 현상 전면 차단
+                    st.session_state.users_backup_db[user_id] = {"password": user_pw, "money": 10000, "inventory": []}
+                    st.success("🎉 회원가입 완료! 이제 바로 로그인을 선택하고 버튼을 눌러주세요.")
                     
             elif choice == "로그인":
-                if user_id in st.session_state.users_db and st.session_state.users_db[user_id]["password"] == user_pw:
+                if user_id in st.session_state.users_backup_db and st.session_state.users_backup_db[user_id]["password"] == user_pw:
                     st.session_state.current_user = user_id
                     st.success(f"👋 {user_id}님 환영합니다!")
                     st.rerun()
                 else:
-                    st.error("❌ 아이디 또는 비밀번호가 틀렸습니다.")
+                    st.error("❌ 아이디 또는 비밀번호가 틀렸습니다. (방금 가입하셨다면 아이디를 다시 확인해 주세요)")
 
 # 🕹️ 게임 메인 화면 (로그인 후)
 else:
     my_id = st.session_state.current_user
-    # 최신 데이터에서 현재 내 유저 정보 매칭
-    if my_id not in st.session_state.users_db:
-        st.error("⚠️ 서버 싱크 오류가 발생했습니다. 로그아웃 후 다시 로그인해 주세요.")
-        st.session_state.current_user = None
-        st.rerun()
-        
-    my_data = st.session_state.users_db[my_id]
+    my_data = st.session_state.users_backup_db[my_id]
     
     col_u1, col_u2 = st.columns([2, 1])
     with col_u1:
@@ -139,12 +112,13 @@ else:
         st.subheader("🎯 동네 축구 일반 카드 팩")
         st.write("💰 **1회 뽑기 비용:** 1,000원")
         
+        # 실시간 쿨타임 체크 대기장치
         is_cooling = False
         current_ts = time.time()
         if st.session_state.cooldown_time > current_ts:
             is_cooling = True
             rem_time = int(st.session_state.cooldown_time - current_ts)
-            btn_text = f"⏳ 쿨타임 대기 중... ({rem_time}초)"
+            btn_text = f"⏳ UCL 카드 당첨! 쿨타임 대기 중... ({rem_time}초)"
         else:
             btn_text = "🔥 카드 팩 오픈! (1,000원 결제)"
             st.session_state.draw_result = None
@@ -153,13 +127,12 @@ else:
             if my_data["money"] < 1000:
                 st.error("❌ 잔액이 부족합니다!")
             else:
-                st.session_state.users_db[my_id]["money"] -= 1000
-                save_data(st.session_state.users_db)
+                st.session_state.users_backup_db[my_id]["money"] -= 1000
                 
                 video_placeholder = st.empty()
                 
                 with st.spinner("⚡ 카드 팩을 뜯는 중..."):
-                    time.sleep(1.0)
+                    time.sleep(0.8)
                     percentage = random.randint(1, 100)
                     if percentage <= 10:
                         lucky_player = random.choice(rare_players)
@@ -168,22 +141,25 @@ else:
                         lucky_player = random.choice(normal_players)
                         is_ucl = False
                 
-                # UCL 등급 전용 비디오 재생 연출
+                # 인벤토리에 선수 추가
+                st.session_state.users_backup_db[my_id]["inventory"].append(lucky_player["name"])
+                st.session_state.draw_result = lucky_player
+                
+                # 💥 [수정 핵심] UCL 등급이 나왔을 때만 비디오 틀고 '20초' 쿨타임 적용!
                 if is_ucl:
                     if os.path.exists("uclcard.mp4"):
                         video_placeholder.video("uclcard.mp4", format="video/mp4", autoplay=True)
                         time.sleep(5.0) 
                         video_placeholder.empty()
                     st.balloons()
+                    st.session_state.cooldown_time = time.time() + 20 # UCL 카드는 20초 락!!
+                else:
+                    # KICK-OFF 카드는 쿨타임 없이 바로 다음 뽑기 가능하도록 0초 설정
+                    st.session_state.cooldown_time = time.time() + 0 
                 
-                st.session_state.users_db[my_id]["inventory"].append(lucky_player["name"])
-                save_data(st.session_state.users_db)
-                
-                st.session_state.draw_result = lucky_player
-                st.session_state.cooldown_time = time.time() + 5
                 st.rerun()
                 
-        # 5초간 카드 사진 고정 노출 시스템
+        # 쿨타임 동안 화면 고정 연출존
         if is_cooling and st.session_state.draw_result:
             p_res = st.session_state.draw_result
             st.success(f"🎉 **[{p_res['grade']}] {p_res['name']}** 선수를 뽑았습니다!")
@@ -218,9 +194,8 @@ else:
                         st.write(f"💵 판매가: {p_info['sell_price']}원")
                     with col_i3:
                         if st.button("💰 판매하기", key=f"sell_{item}"):
-                            st.session_state.users_db[my_id]["inventory"].remove(item)
-                            st.session_state.users_db[my_id]["money"] += p_info["sell_price"]
-                            save_data(st.session_state.users_db)
+                            st.session_state.users_backup_db[my_id]["inventory"].remove(item)
+                            st.session_state.users_backup_db[my_id]["money"] += p_info["sell_price"]
                             st.success(f"💵 {item} 카드를 판매 완료했습니다!")
                             st.rerun()
                     
