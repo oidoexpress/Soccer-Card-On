@@ -22,11 +22,12 @@ if "draw_result" not in st.session_state:
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 카드 데이터 정의
+# 2. 카드 데이터 정의 (💥 하피냐 선수 새롭게 추가!)
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL"},
     {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL"},
-    {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 51000, "grade": "🏆 UCL"}
+    {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 51000, "grade": "🏆 UCL"},
+    {"name": "하피냐", "image": "UEFA Champions League 25 XI 하피냐.png", "sell_price": 52000, "grade": "🏆 UCL"}
 ]
 
 normal_players = [
@@ -103,7 +104,7 @@ else:
     my_id = st.session_state.current_user
     my_data = st.session_state.users_backup_db[my_id]
     
-    # 💥 [수정 핵심] 왼쪽 사이드바 영역에 내 정보 및 소장고 메뉴 고정
+    # 왼쪽 사이드바 영역에 내 정보 및 소장고 메뉴 고정
     with st.sidebar:
         st.header("⚽ 매니저 센터")
         st.write(f"👤 **유저:** {my_id}님")
