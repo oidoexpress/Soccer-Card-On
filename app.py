@@ -38,7 +38,7 @@ if "cooldown_time" not in st.session_state:
 # 2. 📋 카드 데이터 마스터 정의 (오버롤 정보 추가 완료)
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "GK", "ovr": 120},
-    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "ST", "ovr": 136},
+    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 51000, "grade": "🏆 UCL", "pos": "ST", "ovr": 136},
     {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 51000, "grade": "🏆 UCL", "pos": "CDM", "ovr": 136},
     {"name": "하피냐", "image": "UEFA Champions League 25 XI 하피냐.png", "sell_price": 52000, "grade": "🏆 UCL", "pos": "RWF", "ovr": 138}
 ]
