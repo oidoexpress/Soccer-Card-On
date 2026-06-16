@@ -4,6 +4,7 @@ import time
 import os
 import base64
 import json
+from datetime import datetime
 
 # 1. 페이지 설정
 st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽", layout="wide")
@@ -18,7 +19,8 @@ def load_db():
                 return json.load(f)
         except:
             pass
-    return {"test": {"password": "1234", "money": 10000, "inventory": []}}
+    # 기본값 구조 변경: "team"과 "created_at" 필드 추가
+    return {"test": {"password": "1234", "money": 10000, "inventory": [], "team": "선택 없음", "created_at": "2026-01-01"}}
 
 def save_db(db_data):
     with open(DB_FILE, "w", encoding="utf-8") as f:
@@ -48,17 +50,15 @@ normal_players = [
     {"name": "크리스티아누 호날두", "image": "KICK OFF 21 크리스티아누 호날두.webp", "sell_price": 1000, "grade": "🏃 KICK-OFF"}
 ]
 
-# 💥 [신규 등급] TOTS 손흥민 전용 카드 데이터
 tots_son_players = [
     {"name": "22TOTS 손흥민", "image": "22TOTS 손흥민.webp", "sell_price": 80000, "grade": "🔥 TOTS"},
     {"name": "23TOTS MOMENT 손흥민", "image": "23TOTS MOMENT 손흥민.webp", "sell_price": 95000, "grade": "🔥 TOTS"},
     {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS"}
 ]
 
-# 전체 선수 동기화 (소장고 노출용)
 all_players = rare_players + normal_players + tots_son_players
 
-# 3. 스타일 및 스크롤 패치
+# 3. 스타일 및 모바일 패드 스크롤 패치
 st.markdown("""
     <style>
     html, body, [data-testid="stAppViewContainer"] {
@@ -70,10 +70,18 @@ st.markdown("""
         background-color: #232936 !important;
         border: 1px solid #ff4655 !important;
     }
+    /* 프로필 가독성을 위한 커스텀 카드 스타일 */
+    .profile-card {
+        background-color: #1e2430;
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #3a4454;
+        margin-bottom: 20px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# 비디오 재생 로직 (UCL 및 TOTS 연출 통합 사용)
+# 비디오 재생 로직
 def play_ucl_video():
     video_placeholder = st.empty()
     if os.path.exists("uclcard.mp4"):
@@ -113,7 +121,15 @@ if st.session_state.current_user is None:
                 elif user_id == "" or user_pw == "":
                     st.warning("⚠️ 아이디와 비밀번호를 입력해 주세요.")
                 else:
-                    users_db[user_id] = {"password": user_pw, "money": 10000, "inventory": []}
+                    # 회원가입 시 기본 팀과 가입일자 추가 저장
+                    today_str = datetime.today().strftime('%Y-%m-%d')
+                    users_db[user_id] = {
+                        "password": user_pw, 
+                        "money": 10000, 
+                        "inventory": [],
+                        "team": "선택 없음",
+                        "created_at": today_str
+                    }
                     save_db(users_db)
                     st.success("🎉 회원가입 완료! 로그인을 선택하고 다시 눌러주세요.")
             elif choice == "로그인":
@@ -128,10 +144,19 @@ else:
     my_id = st.session_state.current_user
     my_data = users_db[my_id]
     
-    # 사이드바 영역 (내 정보 및 소장고)
+    # 과거 가입 유저 마이그레이션 (에러 방지용 안전 장치)
+    if "team" not in my_data:
+        my_data["team"] = "선택 없음"
+    if "created_at" not in my_data:
+        my_data["created_at"] = "알 수 없음"
+
+    # 사이드바 영역 (내 정보 및 소장고 항상 고정)
     with st.sidebar:
         st.header("⚽ 매니저 센터")
         st.write(f"👤 **유저:** {my_id}님")
+        # 구단 배지 디자인 효과
+        team_emoji = "⚪" if my_data["team"] == "레알 마드리드" else "🔵" if my_data["team"] == "바르셀로나" else "⚪" if my_data["team"] == "토트넘" else "🏴"
+        st.write(f"🛡️ **소속 팀:** {team_emoji} {my_data['team']}")
         st.write(f"💰 **보유 금액:** {my_data['money']:,}원")
         
         if st.button("🔒 로그아웃", use_container_width=True):
@@ -170,115 +195,152 @@ else:
                             st.write("이미지 없음")
                     st.write("---")
 
-    # 메인 화면 (상점)
-    st.title("🛒 카드 팩 상점")
-    st.write("---")
-    
-    is_cooling = False
-    current_ts = time.time()
-    if st.session_state.cooldown_time > current_ts:
-        is_cooling = True
-        rem_time = int(st.session_state.cooldown_time - current_ts)
-    else:
-        st.session_state.draw_result = None
+    # 🎯 [메인 상단 네비게이션] 상점과 프로필 페이지 분기 탭 생성
+    tab_shop, tab_profile = st.tabs(["🛒 카드 팩 상점", "👤 내 프로필 설정"])
 
-    # --- 1번 팩: 일반 카드 팩 ---
-    st.markdown("### 🎯 동네 축구 일반 카드 팩")
-    st.write("💵 **비용:** 1,000원 | 📊 **확률:** KICK-OFF (90%), UCL (10%)")
-    
-    btn_text_normal = f"⏳ 쿨타임 대기 중... ({rem_time}초)" if is_cooling else "🔥 일반 카드 팩 오픈! (1,000원)"
-    if st.button(btn_text_normal, key="btn_normal", type="secondary", use_container_width=True, disabled=is_cooling):
-        if my_data["money"] < 1000:
-            st.sidebar.error("❌ 잔액이 부족합니다!")
+    # ==================== 탭 1: 상점 화면 ====================
+    with tab_shop:
+        st.title("🛒 카드 팩 상점")
+        st.write("---")
+        
+        is_cooling = False
+        current_ts = time.time()
+        if st.session_state.cooldown_time > current_ts:
+            is_cooling = True
+            rem_time = int(st.session_state.cooldown_time - current_ts)
         else:
-            users_db[my_id]["money"] -= 1000
-            with st.spinner("⚡ 팩을 뜯는 중..."):
-                time.sleep(0.6)
-                percentage = random.randint(1, 100)
-                if percentage <= 10:
-                    lucky_player = random.choice(rare_players)
-                    is_special = True
+            st.session_state.draw_result = None
+
+        # 일반 카드 팩
+        st.markdown("### 🎯 동네 축구 일반 카드 팩")
+        st.write("💵 **비용:** 1,000원 | 📊 **확률:** KICK-OFF (90%), UCL (10%)")
+        
+        btn_text_normal = f"⏳ 쿨타임 대기 중... ({rem_time}초)" if is_cooling else "🔥 일반 카드 팩 오픈! (1,000원)"
+        if st.button(btn_text_normal, key="btn_normal", type="secondary", use_container_width=True, disabled=is_cooling):
+            if my_data["money"] < 1000:
+                st.sidebar.error("❌ 잔액이 부족합니다!")
+            else:
+                users_db[my_id]["money"] -= 1000
+                with st.spinner("⚡ 팩을 뜯는 중..."):
+                    time.sleep(0.6)
+                    percentage = random.randint(1, 100)
+                    if percentage <= 10:
+                        lucky_player = random.choice(rare_players)
+                        is_special = True
+                    else:
+                        lucky_player = random.choice(normal_players)
+                        is_special = False
+                
+                users_db[my_id]["inventory"].append(lucky_player["name"])
+                save_db(users_db)
+                st.session_state.draw_result = lucky_player
+                
+                if is_special:
+                    play_ucl_video()
+                    st.session_state.cooldown_time = time.time() + 20
                 else:
-                    lucky_player = random.choice(normal_players)
-                    is_special = False
-            
-            users_db[my_id]["inventory"].append(lucky_player["name"])
-            save_db(users_db)
-            st.session_state.draw_result = lucky_player
-            
-            if is_special:
+                    st.session_state.cooldown_time = time.time() + 3
+                st.rerun()
+
+        st.write("---")
+
+        # UCL 전용 프리미엄 팩
+        st.markdown("### 🏆 UCL 전용 프리미엄 팩")
+        st.write("💵 **비용:** 50,000원 | 📊 **확률:** UCL 등급 카드 100% 확정 등장!")
+        
+        btn_text_ucl = f"⏳ UCL 당첨 연출 대기 중... ({rem_time}초)" if is_cooling else "✨ UCL 전용 팩 오픈! (50,000원)"
+        if st.button(btn_text_ucl, key="btn_ucl_pack", type="primary", use_container_width=True, disabled=is_cooling):
+            if my_data["money"] < 50000:
+                st.sidebar.error("❌ 잔액이 부족합니다!")
+            else:
+                users_db[my_id]["money"] -= 50000
+                with st.spinner("🌟 UEFA 챔피언스리그 팩 개봉 중..."):
+                    time.sleep(0.6)
+                    lucky_player = random.choice(rare_players)
+                
+                users_db[my_id]["inventory"].append(lucky_player["name"])
+                save_db(users_db)
+                st.session_state.draw_result = lucky_player
+                
                 play_ucl_video()
                 st.session_state.cooldown_time = time.time() + 20
-            else:
-                st.session_state.cooldown_time = time.time() + 3
-            st.rerun()
-
-    st.write("---")
-
-    # --- 2번 팩: UCL 전용 프리미엄 팩 ---
-    st.markdown("### 🏆 UCL 전용 프리미엄 팩")
-    st.write("💵 **비용:** 50,000원 | 📊 **확률:** UCL 등급 카드 100% 확정 등장!")
-    
-    btn_text_ucl = f"⏳ UCL 당첨 연출 대기 중... ({rem_time}초)" if is_cooling else "✨ UCL 전용 팩 오픈! (50,000원)"
-    if st.button(btn_text_ucl, key="btn_ucl_pack", type="primary", use_container_width=True, disabled=is_cooling):
-        if my_data["money"] < 50000:
-            st.sidebar.error("❌ 잔액이 부족합니다!")
-        else:
-            users_db[my_id]["money"] -= 50000
-            with st.spinner("🌟 UEFA 챔피언스리그 팩 개봉 중..."):
-                time.sleep(0.6)
-                lucky_player = random.choice(rare_players)
-            
-            users_db[my_id]["inventory"].append(lucky_player["name"])
-            save_db(users_db)
-            st.session_state.draw_result = lucky_player
-            
-            play_ucl_video()
-            st.session_state.cooldown_time = time.time() + 20
-            st.rerun()
-            
-    st.write("---")
-
-    # --- 💥 3번 팩: 손흥민 스페셜 팩 (신설!) ---
-    st.markdown("### 🔥 손흥민 TOTS 스페셜 프리미엄 팩")
-    st.write("💵 **비용:** 100,000원 | 📊 **확률:** **손흥민 TOTS 한정판 카드 100% 확정 등장!**")
-    
-    btn_text_son = f"⏳ 손흥민 소환 연출 대기 중... ({rem_time}초)" if is_cooling else "🇰🇷 손흥민 스페셜 팩 오픈! (100,000원)"
-    if st.button(btn_text_son, key="btn_son_pack", type="primary", use_container_width=True, disabled=is_cooling):
-        if my_data["money"] < 100000:
-            st.sidebar.error("❌ 잔액이 부족합니다!")
-        else:
-            users_db[my_id]["money"] -= 100000
-            with st.spinner("⚡ 대한민국 레전드 손흥민 카드 오픈 중..."):
-                time.sleep(0.6)
-                # 오직 TOTS 등급 리스트에서만 랜덤 추출
-                lucky_player = random.choice(tots_son_players)
-            
-            users_db[my_id]["inventory"].append(lucky_player["name"])
-            save_db(users_db)
-            st.session_state.draw_result = lucky_player
-            
-            # 레전드 등급이므로 20초 연출 발동
-            play_ucl_video()
-            st.session_state.cooldown_time = time.time() + 20
-            st.rerun()
-
-    # 결과물 중앙 화면에 노출
-    if is_cooling and st.session_state.draw_result:
+                st.rerun()
+                
         st.write("---")
-        p_res = st.session_state.draw_result
-        st.success(f"🎉 **[{p_res['grade']}] {p_res['name']}** 선수를 뽑았습니다!")
-        
-        col_c1, col_c2, col_c3 = st.columns([1, 1.5, 1])
-        with col_c2:
-            try:
-                st.image(p_res['image'], use_container_width=True)
-            except:
-                st.error(f"❌ '{p_res['image']}' 이미지를 불러오지 못했습니다.")
-        
-        time.sleep(1)
-        st.rerun()
 
+        # 손흥민 스페셜 팩
+        st.markdown("### ### 🔥 손흥민 TOTS 스페셜 프리미엄 팩")
+        st.write("💵 **비용:** 100,000원 | 📊 **확률:** 손흥민 TOTS 한정판 카드 100% 확정 등장!")
+        
+        btn_text_son = f"⏳ 손흥민 소환 연출 대기 중... ({rem_time}초)" if is_cooling else "🇰🇷 손흥민 스페셜 팩 오픈! (100,000원)"
+        if st.button(btn_text_son, key="btn_son_pack", type="primary", use_container_width=True, disabled=is_cooling):
+            if my_data["money"] < 100000:
+                st.sidebar.error("❌ 잔액이 부족합니다!")
+            else:
+                users_db[my_id]["money"] -= 100000
+                with st.spinner("⚡ 대한민국 레전드 손흥민 카드 오픈 중..."):
+                    time.sleep(0.6)
+                    lucky_player = random.choice(tots_son_players)
+                
+                users_db[my_id]["inventory"].append(lucky_player["name"])
+                save_db(users_db)
+                st.session_state.draw_result = lucky_player
+                
+                play_ucl_video()
+                st.session_state.cooldown_time = time.time() + 20
+                st.rerun()
+
+        if is_cooling and st.session_state.draw_result:
+            st.write("---")
+            p_res = st.session_state.draw_result
+            st.success(f"🎉 **[{p_res['grade']}] {p_res['name']}** 선수를 뽑았습니다!")
+            
+            col_c1, col_c2, col_c3 = st.columns([1, 1.5, 1])
+            with col_c2:
+                try:
+                    st.image(p_res['image'], use_container_width=True)
+                except:
+                    st.error(f"❌ '{p_res['image']}' 이미지를 불러오지 못했습니다.")
+            time.sleep(1)
+            st.rerun()
+
+    # ==================== 💥 탭 2: 내 프로필 설정 화면 ====================
+    with tab_profile:
+        st.title("👤 유저 프로필 센터")
+        st.write("---")
+        
+        # 카드 레이아웃 스타일 적용하여 대시보드 출력
+        st.markdown(f"""
+        <div class="profile-card">
+            <h3>🆔 구단주 정보</h3>
+            <p>• <b>구단주 ID:</b> {my_id}</p>
+            <p>• <b>창단일 (가입일):</b> {my_data['created_at']}</p>
+            <p>• <b>현재 보유 잔고:</b> {my_data['money']:,} 원</p>
+            <p>• <b>총 보유 카드 장수:</b> {len(my_data['inventory'])} 장</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.subheader("🛡️ 선호 팀 고르기")
+        st.write("팀을 선택하면 즉시 클럽 데이터베이스에 반영되며 사이드바 프로필에 구단 배지가 표시됩니다.")
+        
+        # 선택지 리스트 제공 및 현재 유저의 선택 상태를 디폴트로 매핑
+        teams_list = ["선택 없음", "레알 마드리드", "바르셀로나", "토트넘"]
+        try:
+            current_team_index = teams_list.index(my_data["team"])
+        except ValueError:
+            current_team_index = 0
+            
+        selected_team = st.selectbox("나의 최애 클럽팀을 선택하세요", teams_list, index=current_team_index)
+        
+        # 변경 사항 감지 및 실시간 영구 파일 저장
+        if selected_team != my_data["team"]:
+            users_db[my_id]["team"] = selected_team
+            save_db(users_db)
+            st.success(f"✅ 구단주님의 선호 클럽이 **{selected_team}**으로 성공적으로 변경되었습니다!")
+            time.sleep(1)
+            st.rerun()
+
+# 5. 오디오 인젝션
 if os.path.exists("loading.mp3"):
     try:
         with open("loading.mp3", "rb") as f:
