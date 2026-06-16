@@ -6,7 +6,7 @@ import base64
 import json
 from datetime import datetime
 
-# 1. 페이지 설정 (화면을 꽉 차게 기본 세팅)
+# 1. 페이지 설정
 st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽", layout="wide")
 
 # [영구 파일 DB 로드/세이브]
@@ -35,45 +35,42 @@ if "draw_result" not in st.session_state:
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 카드 데이터 정의
+# 2. 📋 카드 데이터 정의 (포지션 'pos' 속성 추가)
 rare_players = [
-    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL"},
-    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 53000, "grade": "🏆 UCL"},
-    {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 51000, "grade": "🏆 UCL"},
-    {"name": "하피냐", "image": "UEFA Champions League 25 XI 하피냐.png", "sell_price": 52000, "grade": "🏆 UCL"}
+    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "CM"},
+    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "ST"},
+    {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 51000, "grade": "🏆 UCL", "pos": "CDM"},
+    {"name": "하피냐", "image": "UEFA Champions League 25 XI 하피냐.png", "sell_price": 52000, "grade": "🏆 UCL", "pos": "RWF"}
 ]
 
 normal_players = [
-    {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "🏃 KICK-OFF"},
-    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "🏃 KICK-OFF"},
-    {"name": "크리스티아누 호날두", "image": "KICK OFF 21 크리스티아누 호날두.webp", "sell_price": 1000, "grade": "🏃 KICK-OFF"}
+    {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "CAM"},
+    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "CB"},
+    {"name": "크리스티아누 호날두", "image": "KICK OFF 21 크리스티아누 호날두.webp", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "ST"}
 ]
 
+# ✨ [포커스] 손흥민 선수의 모든 카드는 LWF(좌측 윙 포워드)로 설정
 tots_son_players = [
-    {"name": "22TOTS 손흥민", "image": "22TOTS 손흥민.webp", "sell_price": 105000, "grade": "🔥 TOTS"},
-    {"name": "23TOTS MOMENT 손흥민", "image": "23TOTS MOMENT 손흥민.webp", "sell_price": 200000, "grade": "🔥 TOTS"},
-    {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS"}
+    {"name": "22TOTS 손흥민", "image": "22TOTS 손흥민.webp", "sell_price": 80000, "grade": "🔥 TOTS", "pos": "LWF"},
+    {"name": "23TOTS MOMENT 손흥민", "image": "23TOTS MOMENT 손흥민.webp", "sell_price": 95000, "grade": "🔥 TOTS", "pos": "LWF"},
+    {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS", "pos": "LWF"}
 ]
 
 all_players = rare_players + normal_players + tots_son_players
 
-# 3. 🔥 패드/모바일 해상도 강제 최적화 스타일 패치
+# 3. 스타일 패치
 st.markdown("""
     <style>
-    /* 패드 및 모바일 기기에서 뷰포트 크기를 100%로 강제 고정 */
     html, body, [data-testid="stAppViewContainer"] {
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
         width: 100% !important;
-        font-size: 16px !important; /* 글자 크기 최적화 */
+        font-size: 16px !important;
     }
-    
-    /* 글자가 자라나거나 찌그러지는 현상 방지 */
     h1, h2, h3, p, span, label {
         font-family: sans-serif !important;
         letter-spacing: normal !important;
     }
-    
     .stTextInput input {
         color: #ece8e1 !important;
         background-color: #232936 !important;
@@ -86,8 +83,16 @@ st.markdown("""
         border: 1px solid #3a4454;
         margin-bottom: 20px;
     }
-    
-    /* 모바일/패드 스크린 전용 반응형 추가 패치 */
+    /* 포지션 뱃지 디자인 스타일 */
+    .pos-badge {
+        background-color: #ff4655;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 12px;
+        margin-right: 5px;
+    }
     @media (max-width: 1024px) {
         [data-testid="stSidebar"] {
             width: 100% !important;
@@ -100,7 +105,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 비디오 재생 로직
 def play_ucl_video():
     video_placeholder = st.empty()
     if os.path.exists("uclcard.mp4"):
@@ -179,20 +183,14 @@ else:
             if os.path.exists("토트넘로고.jpeg"):
                 st.image("토트넘로고.jpeg", width=120)
                 st.write("")
-            else:
-                st.caption("⚠️ '토트넘로고.jpeg' 누락됨")
         elif my_data["team"] == "바르셀로나":
             if os.path.exists("바로셀로나.svg"):
                 st.image("바로셀로나.svg", width=120)
                 st.write("")
-            else:
-                st.caption("⚠️ '바로셀로나.svg' 누락됨")
         elif my_data["team"] == "레알 마드리드":
             if os.path.exists("레알마드리드.svg"):
                 st.image("레알마드리드.svg", width=120)
                 st.write("")
-            else:
-                st.caption("⚠️ '레알마드리드.svg' 누락됨")
 
         st.write(f"💰 **보유 금액:** {my_data['money']:,}원")
         
@@ -214,7 +212,8 @@ else:
                 p_info = next((p for p in all_players if p["name"] == item), None)
                 
                 if p_info:
-                    st.write(f"🏃‍♂️ **[{p_info['grade']}] {item}** ({count}장)")
+                    # 포지션 뱃지를 이름 옆에 결합하여 가시성 확보
+                    st.write(f"🏃‍♂️ **[{p_info['grade']}] <span class='pos-badge'>{p_info['pos']}</span> {item}** ({count}장)", unsafe_allow_html=True)
                     col_i1, col_i2 = st.columns([1, 1])
                     with col_i1:
                         st.write(f"💵 {p_info['sell_price']:,}원")
@@ -330,7 +329,8 @@ else:
         if is_cooling and st.session_state.draw_result:
             st.write("---")
             p_res = st.session_state.draw_result
-            st.success(f"🎉 **[{p_res['grade']}] {p_res['name']}** 선수를 뽑았습니다!")
+            # 뽑았을 때 메시지에도 포지션 연동 완료
+            st.success(f"🎉 **[{p_res['grade']}] {p_res['pos']} {p_res['name']}** 선수를 뽑았습니다!")
             
             col_c1, col_c2, col_c3 = st.columns([1, 1.5, 1])
             with col_c2:
@@ -364,20 +364,14 @@ else:
                 if os.path.exists("토트넘로고.jpeg"):
                     st.markdown("<p style='text-align:center; font-weight:bold;'>🛡️ 선택 구단 엠블럼</p>", unsafe_allow_html=True)
                     st.image("토트넘로고.jpeg", width=180)
-                else:
-                    st.warning("⚠️ '토트넘로고.jpeg' 파일이 폴더에 없습니다.")
             elif my_data["team"] == "바르셀로나":
                 if os.path.exists("바로셀로나.svg"):
                     st.markdown("<p style='text-align:center; font-weight:bold;'>🛡️ 선택 구단 엠블럼</p>", unsafe_allow_html=True)
                     st.image("바로셀로나.svg", width=180)
-                else:
-                    st.warning("⚠️ '바로셀로나.svg' 파일이 폴더에 없습니다.")
             elif my_data["team"] == "레알 마드리드":
                 if os.path.exists("레알마드리드.svg"):
                     st.markdown("<p style='text-align:center; font-weight:bold;'>🛡️ 선택 구단 엠블럼</p>", unsafe_allow_html=True)
                     st.image("레알마드리드.svg", width=180)
-                else:
-                    st.warning("⚠️ '레알마드리드.svg' 파일이 폴더에 없습니다.")
 
         st.subheader("🛡️ 선호 팀 고르기")
         st.write("팀을 변경하면 실시간으로 클럽 데이터베이스에 저장됩니다.")
