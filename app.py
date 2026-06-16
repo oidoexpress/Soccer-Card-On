@@ -153,14 +153,20 @@ else:
         team_emoji = "⚪" if my_data["team"] == "레알 마드리드" else "🔵" if my_data["team"] == "바르셀로나" else "⚪" if my_data["team"] == "토트넘" else "🏴"
         st.write(f"🛡️ **소속 팀:** {team_emoji} {my_data['team']}")
         
-        # 💥 [신규 기능] 사이드바 소속팀 글씨 바로 밑에 로고 띄우기
+        # 💥 [사이드바 팀 로고 연동 파트 - 바르셀로나 추가!]
         if my_data["team"] == "토트넘":
             if os.path.exists("토트넘로고.jpeg"):
                 st.image("토트넘로고.jpeg", width=120)
-                st.write("") # 마진 확보용 공백
+                st.write("")
             else:
                 st.caption("⚠️ '토트넘로고.jpeg' 누락됨")
-        elif my_data["team"] in ["레알 마드리드", "바르셀로나"]:
+        elif my_data["team"] == "바르셀로나":
+            if os.path.exists("바로셀로나.svg"):
+                st.image("바로셀로나.svg", width=120)
+                st.write("")
+            else:
+                st.caption("⚠️ '바로셀로나.svg' 누락됨")
+        elif my_data["team"] == "레알 마드리드":
             st.caption(f"ℹ️ {my_data['team']} 엠블럼 준비 중")
 
         st.write(f"💰 **보유 금액:** {my_data['money']:,}원")
@@ -329,38 +335,4 @@ else:
             """, unsafe_allow_html=True)
             
         with col_prof_logo:
-            if my_data["team"] == "토트넘":
-                if os.path.exists("토트넘로고.jpeg"):
-                    st.markdown("<p style='text-align:center; font-weight:bold;'>🛡️ 선택 구단 엠블럼</p>", unsafe_allow_html=True)
-                    st.image("토트넘로고.jpeg", width=180)
-                else:
-                    st.warning("⚠️ '토트넘로고.jpeg' 파일이 폴더에 없습니다.")
-            elif my_data["team"] in ["레알 마드리드", "바르셀로나"]:
-                st.info(f"⚪ {my_data['team']} 로고 파일은 아직 준비 중입니다.")
-
-        st.subheader("🛡️ 선호 팀 고르기")
-        st.write("팀을 변경하면 실시간으로 클럽 데이터베이스에 저장됩니다.")
-        
-        teams_list = ["선택 없음", "레알 마드리드", "바르셀로나", "토트넘"]
-        try:
-            current_team_index = teams_list.index(my_data["team"])
-        except ValueError:
-            current_team_index = 0
-            
-        selected_team = st.selectbox("나의 최애 클럽팀을 선택하세요", teams_list, index=current_team_index)
-        
-        if selected_team != my_data["team"]:
-            users_db[my_id]["team"] = selected_team
-            save_db(users_db)
-            st.success(f"✅ 구단주님의 선호 클럽이 **{selected_team}**으로 변경되었습니다!")
-            time.sleep(1)
-            st.rerun()
-
-# 5. 오디오 인젝션
-if os.path.exists("loading.mp3"):
-    try:
-        with open("loading.mp3", "rb") as f:
-            audio_base64 = base64.b64encode(f.read()).decode()
-        st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{audio_base64}" style="display:none;"></audio>', unsafe_allow_html=True)
-    except:
-        pass
+            # 💥
