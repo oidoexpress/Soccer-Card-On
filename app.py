@@ -19,7 +19,6 @@ def load_db():
                 return json.load(f)
         except:
             pass
-    # 테스트 편의를 위해 초기 자금을 600,000원으로 넉넉하게 설정했습니다.
     return {"test": {"password": "1234", "money": 600000, "inventory": [], "team": "선택 없음", "created_at": "2026-01-01"}}
 
 def save_db(db_data):
@@ -36,27 +35,27 @@ if "draw_result" not in st.session_state:
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 📋 카드 데이터 마스터 정의
+# 2. 📋 카드 데이터 마스터 정의 (오버롤 정보 추가 완료)
 rare_players = [
-    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "GK"},
-    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "ST"},
-    {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 51000, "grade": "🏆 UCL", "pos": "CDM"},
-    {"name": "하피냐", "image": "UEFA Champions League 25 XI 하피냐.png", "sell_price": 52000, "grade": "🏆 UCL", "pos": "RWF"}
+    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "GK", "ovr": 120},
+    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "ST", "ovr": 136},
+    {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 51000, "grade": "🏆 UCL", "pos": "CDM", "ovr": 136},
+    {"name": "하피냐", "image": "UEFA Champions League 25 XI 하피냐.png", "sell_price": 52000, "grade": "🏆 UCL", "pos": "RWF", "ovr": 138}
 ]
 
 normal_players = [
-    {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "CF"},
-    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "CB"},
-    {"name": "크리스티아누 호날두", "image": "KICK OFF 21 크리스티아누 호날두.webp", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "ST"}
+    {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "CF", "ovr": 114},
+    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "CB", "ovr": 60}, # 임의 기본값 지정
+    {"name": "크리스티아누 호날두", "image": "KICK OFF 21 크리스티아누 호날두.webp", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "ST", "ovr": 113}
 ]
 
 tots_son_players = [
-    {"name": "22TOTS 손흥민", "image": "22TOTS 손흥민.webp", "sell_price": 80000, "grade": "🔥 TOTS", "pos": "LWF"},
-    {"name": "23TOTS MOMENT 손흥민", "image": "23TOTS MOMENT 손흥민.webp", "sell_price": 95000, "grade": "🔥 TOTS", "pos": "LWF"},
-    {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS", "pos": "LWF"}
+    {"name": "22TOTS 손흥민", "image": "22TOTS 손흥민.webp", "sell_price": 80000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 116},
+    {"name": "23TOTS MOMENT 손흥민", "image": "23TOTS MOMENT 손흥민.webp", "sell_price": 95000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 120},
+    {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 118}
 ]
 
-# ✨ 히샤를리송 마스터 데이터 (5진, 6각, 21특 고정)
+# ✨ 히샤를리송 마스터 데이터 (오버롤 145 적용)
 richarlison_master = {
     "name": "HM24 히샤를리송", 
     "image": "HM24 히샤를리송 5진화 6각성 21특훈.png", 
@@ -64,6 +63,7 @@ richarlison_master = {
     "sell_price": 250000, 
     "grade": "🌟 HARD WORKER", 
     "pos": "ST",
+    "ovr": 145,
     "rank": 5,
     "awaken": 6,
     "training": 21
@@ -104,6 +104,17 @@ st.markdown("""
         font-weight: bold;
         font-size: 12px;
         margin-right: 5px;
+    }
+    /* 오버롤 전용 뱃지 스타일 (레드/골드 느낌) */
+    .ovr-badge {
+        background-color: #d32f2f;
+        color: #ffffff;
+        padding: 2px 7px;
+        border-radius: 4px;
+        font-weight: 900;
+        font-size: 13px;
+        margin-right: 5px;
+        border: 1px solid #ffeb3b;
     }
     .stat-badge {
         font-size: 11px;
@@ -195,7 +206,7 @@ else:
     if "created_at" not in my_data:
         my_data["created_at"] = "알 수 없음"
 
-    # 유저 인벤토리 구구조 마이그레이션 안전장치
+    # 유저 인벤토리 구조 마이그레이션 안전장치
     updated_inv = []
     for item in my_data["inventory"]:
         if isinstance(item, str):
@@ -214,15 +225,12 @@ else:
         team_emoji = "👑" if my_data["team"] == "레알 마드리드" else "🔵" if my_data["team"] == "바르셀로나" else "⚪" if my_data["team"] == "토트넘" else "🏴"
         st.write(f"🛡️ **소속 팀:** {team_emoji} {my_data['team']}")
         
-        if my_data["team"] == "토트넘":
-            if os.path.exists("토트넘로고.jpeg"):
-                st.image("토트넘로고.jpeg", width=120)
-        elif my_data["team"] == "바르셀로나":
-            if os.path.exists("바로셀로나.svg"):
-                st.image("바로셀로나.svg", width=120)
-        elif my_data["team"] == "레알 마드리드":
-            if os.path.exists("레알마드리드.svg"):
-                st.image("레알마드리드.svg", width=120)
+        if my_data["team"] == "토트넘" and os.path.exists("토트넘로고.jpeg"):
+            st.image("토트넘로고.jpeg", width=120)
+        elif my_data["team"] == "바르셀로나" and os.path.exists("바로셀로나.svg"):
+            st.image("바로셀로나.svg", width=120)
+        elif my_data["team"] == "레알 마드리드" and os.path.exists("레알마드리드.svg"):
+            st.image("레알마드리드.svg", width=120)
 
         st.write(f"💰 **보유 금액:** {my_data['money']:,}원")
         
@@ -250,7 +258,8 @@ else:
                 if p_info:
                     count = sum(1 for c in my_inv if c['name'] == card['name'] and c['rank'] == card['rank'] and c['awaken'] == card['awaken'] and c['training'] == card['training'])
                     
-                    st.write(f"🏃‍♂️ **[{p_info['grade']}] <span class='pos-badge'>{p_info['pos']}</span> {card['name']}** ({count}장)", unsafe_allow_html=True)
+                    # 제목 부분에 OVR 표시 추가
+                    st.write(f"🏃‍♂️ <span class='ovr-badge'>{p_info['ovr']}</span>**[{p_info['grade']}] <span class='pos-badge'>{p_info['pos']}</span> {card['name']}** ({count}장)", unsafe_allow_html=True)
                     st.markdown(f"""
                         <span class='stat-badge badge-rank'>{card['rank']}진</span>
                         <span class='stat-badge badge-awaken'>{card['awaken']}각</span>
@@ -260,7 +269,6 @@ else:
                     col_i1, col_i2 = st.columns([1, 1])
                     with col_i1:
                         curr_sell_price = richarlison_master["sell_price"] if card["name"] == "HM24 히샤를리송" else p_info["sell_price"]
-                        # 🛠️ [수정 완료] 문법 에러 유발 단어 제거 및 깔끔하게 출력 변경
                         st.write(f"💵 {curr_sell_price:,}원")
                     with col_i2:
                         if st.button("💰 판매", key=f"sell_{card_key}_{idx}"):
@@ -384,8 +392,7 @@ else:
         if is_cooling and st.session_state.draw_result:
             st.write("---")
             p_res = st.session_state.draw_result
-            st.success(f"🎉 **[{p_res['grade']}] {p_res['pos']} {p_res['name']}** 선수를 뽑았습니다!")
-            st.markdown(f"📊 **획득 스펙:** {p_res['rank']}진화 | {p_res['awaken']}각성 | {p_res['training']}특훈")
+            st.success(f"🎉 **오버롤 {p_res['ovr']} | [{p_res['grade']}] {p_res['pos']} {p_res['name']}** 선수를 뽑았습니다!")
             
             col_c2 = st.columns([1, 1.5, 1])[1]
             with col_c2:
@@ -414,7 +421,7 @@ else:
                 st.info("🖼️ 선수 이미지 배치 대기 중")
                     
         with col_m2:
-            st.markdown(f"### **[{richarlison_master['grade']}] {richarlison_master['name']}**")
+            st.markdown(f"### <span class='ovr-badge' style='font-size:20px; padding:4px 10px;'>{richarlison_master['ovr']}</span> **[{richarlison_master['grade']}] {richarlison_master['name']}**", unsafe_allow_html=True)
             st.markdown(f"**포지션:** <span class='pos-badge'>{richarlison_master['pos']}</span>", unsafe_allow_html=True)
             st.write("---")
             st.markdown(f"""
@@ -439,7 +446,7 @@ else:
                     })
                     save_db(users_db)
                     st.balloons()
-                    st.success(f"🎉 성공적으로 {richarlison_master['name']} (5진 6각 21특) 선수를 구단으로 영입했습니다!")
+                    st.success(f"🎉 성공적으로 {richarlison_master['name']} (OVR {richarlison_master['ovr']}) 선수를 구단으로 영입했습니다!")
                     time.sleep(1.5)
                     st.rerun()
 
