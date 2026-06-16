@@ -146,12 +146,23 @@ else:
     if "created_at" not in my_data:
         my_data["created_at"] = "알 수 없음"
 
-    # 사이드바 영역
+    # ==================== 사이드바 영역 (매니저 센터) ====================
     with st.sidebar:
         st.header("⚽ 매니저 센터")
         st.write(f"👤 **유저:** {my_id}님")
         team_emoji = "⚪" if my_data["team"] == "레알 마드리드" else "🔵" if my_data["team"] == "바르셀로나" else "⚪" if my_data["team"] == "토트넘" else "🏴"
         st.write(f"🛡️ **소속 팀:** {team_emoji} {my_data['team']}")
+        
+        # 💥 [신규 기능] 사이드바 소속팀 글씨 바로 밑에 로고 띄우기
+        if my_data["team"] == "토트넘":
+            if os.path.exists("토트넘로고.jpeg"):
+                st.image("토트넘로고.jpeg", width=120)
+                st.write("") # 마진 확보용 공백
+            else:
+                st.caption("⚠️ '토트넘로고.jpeg' 누락됨")
+        elif my_data["team"] in ["레알 마드리드", "바르셀로나"]:
+            st.caption(f"ℹ️ {my_data['team']} 엠블럼 준비 중")
+
         st.write(f"💰 **보유 금액:** {my_data['money']:,}원")
         
         if st.button("🔒 로그아웃", use_container_width=True):
@@ -304,7 +315,6 @@ else:
         st.title("👤 유저 프로필 센터")
         st.write("---")
         
-        # 레이아웃을 2개 컬럼으로 쪼개서 왼쪽엔 텍스트 정보, 오른쪽엔 고른 팀 로고 배치
         col_prof_text, col_prof_logo = st.columns([2, 1])
         
         with col_prof_text:
@@ -319,7 +329,6 @@ else:
             """, unsafe_allow_html=True)
             
         with col_prof_logo:
-            # 💥 [핵심 기능] 토트넘을 골랐고 로고 파일이 존재할 때 실물 로고 박아주기
             if my_data["team"] == "토트넘":
                 if os.path.exists("토트넘로고.jpeg"):
                     st.markdown("<p style='text-align:center; font-weight:bold;'>🛡️ 선택 구단 엠블럼</p>", unsafe_allow_html=True)
@@ -328,8 +337,6 @@ else:
                     st.warning("⚠️ '토트넘로고.jpeg' 파일이 폴더에 없습니다.")
             elif my_data["team"] in ["레알 마드리드", "바르셀로나"]:
                 st.info(f"⚪ {my_data['team']} 로고 파일은 아직 준비 중입니다.")
-            else:
-                st.write("")
 
         st.subheader("🛡️ 선호 팀 고르기")
         st.write("팀을 변경하면 실시간으로 클럽 데이터베이스에 저장됩니다.")
