@@ -35,7 +35,7 @@ if "draw_result" not in st.session_state:
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 📋 카드 데이터 정의 (노무현 포지션을 CF로 수정 완료)
+# 2. 📋 카드 데이터 정의
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "GK"},
     {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "ST"},
@@ -82,7 +82,6 @@ st.markdown("""
         border: 1px solid #3a4454;
         margin-bottom: 20px;
     }
-    /* 포지션 뱃지 디자인 스타일 */
     .pos-badge {
         background-color: #ff4655;
         color: white;
@@ -177,7 +176,6 @@ else:
         team_emoji = "👑" if my_data["team"] == "레알 마드리드" else "🔵" if my_data["team"] == "바르셀로나" else "⚪" if my_data["team"] == "토트넘" else "🏴"
         st.write(f"🛡️ **소속 팀:** {team_emoji} {my_data['team']}")
         
-        # 사이드바 로고 출력
         if my_data["team"] == "토트넘":
             if os.path.exists("토트넘로고.jpeg"):
                 st.image("토트넘로고.jpeg", width=120)
@@ -229,10 +227,10 @@ else:
                             st.write("이미지 없음")
                     st.write("---")
 
-    # 메인 탭 분기
-    tab_shop, tab_profile = st.tabs(["🛒 카드 팩 상점", "👤 내 프로필 설정"])
+    # 🌟 [포커스] 카드팩 상점과 프로필 설정 사이에 '선수 상점' 추가
+    tab_shop, tab_player_market, tab_profile = st.tabs(["🛒 카드 팩 상점", "🏃‍♂️ 선수 상점", "👤 내 프로필 설정"])
 
-    # ==================== 탭 1: 상점 화면 ====================
+    # ==================== 탭 1: 카드 팩 상점 화면 ====================
     with tab_shop:
         st.title("🛒 카드 팩 상점")
         st.write("---")
@@ -338,7 +336,14 @@ else:
             time.sleep(1)
             st.rerun()
 
-    # ==================== 탭 2: 내 프로필 설정 화면 ====================
+    # ==================== 🌟 탭 2: 선수 상점 화면 (신규 추가) ====================
+    with tab_player_market:
+        st.title("🏃‍♂️ 선수 상점")
+        st.write("---")
+        st.info("ℹ️ 현재 선수 상점 준비 중입니다. 조만간 특별한 선수들이 입고될 예정입니다!")
+        # 요청에 따라 현재는 비워둠
+
+    # ==================== 탭 3: 내 프로필 설정 화면 ====================
     with tab_profile:
         st.title("👤 유저 프로필 센터")
         st.write("---")
