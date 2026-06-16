@@ -19,7 +19,7 @@ def load_db():
                 return json.load(f)
         except:
             pass
-    # 인벤토리 저장 구조 예시: [{"name": "노무현", "rank": 0, "awaken": 0, "training": 0}, ...]
+    # 테스트 편의를 위해 초기 자금을 600,000원으로 넉넉하게 설정했습니다.
     return {"test": {"password": "1234", "money": 600000, "inventory": [], "team": "선택 없음", "created_at": "2026-01-01"}}
 
 def save_db(db_data):
@@ -36,8 +36,7 @@ if "draw_result" not in st.session_state:
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 📋 카드 데이터 마스터 정의 (기본 포지션 및 판매가 정보 등)
-# 모든 기본 카드들은 기본적으로 0진화, 0각성, 0특훈 스펙을 가집니다.
+# 2. 📋 카드 데이터 마스터 정의
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "GK"},
     {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "ST"},
@@ -57,7 +56,7 @@ tots_son_players = [
     {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS", "pos": "LWF"}
 ]
 
-# ✨ [선수 상점 전용 등록] 히샤를리송 마스터 데이터 (5진, 6각, 21특 고정)
+# ✨ 히샤를리송 마스터 데이터 (5진, 6각, 21특 고정)
 richarlison_master = {
     "name": "HM24 히샤를리송", 
     "image": "HM24 히샤를리송 5진화 6각성 21특훈.png", 
@@ -106,7 +105,6 @@ st.markdown("""
         font-size: 12px;
         margin-right: 5px;
     }
-    /* 진화, 각성, 특훈용 스펙 스타일 뱃지 */
     .stat-badge {
         font-size: 11px;
         padding: 2px 5px;
@@ -115,9 +113,9 @@ st.markdown("""
         margin-right: 3px;
         color: #ffffff;
     }
-    .badge-rank { background-color: #9c27b0; }     /* 진화: 보라 */
-    .badge-awaken { background-color: #ff9800; }   /* 각성: 주황 */
-    .badge-train { background-color: #00bcd4; }    /* 특훈: 하늘 */
+    .badge-rank { background-color: #9c27b0; }
+    .badge-awaken { background-color: #ff9800; }
+    .badge-train { background-color: #00bcd4; }
     
     @media (max-width: 1024px) {
         [data-testid="stSidebar"] {
@@ -197,7 +195,7 @@ else:
     if "created_at" not in my_data:
         my_data["created_at"] = "알 수 없음"
 
-    # 과거 단일 스트링 배열 구조 유저 보호 조치용 변환 로직
+    # 유저 인벤토리 구구조 마이그레이션 안전장치
     updated_inv = []
     for item in my_data["inventory"]:
         if isinstance(item, str):
@@ -219,15 +217,12 @@ else:
         if my_data["team"] == "토트넘":
             if os.path.exists("토트넘로고.jpeg"):
                 st.image("토트넘로고.jpeg", width=120)
-                st.write("")
         elif my_data["team"] == "바르셀로나":
             if os.path.exists("바로셀로나.svg"):
                 st.image("바로셀로나.svg", width=120)
-                st.write("")
         elif my_data["team"] == "레알 마드리드":
             if os.path.exists("레알마드리드.svg"):
                 st.image("레알마드리드.svg", width=120)
-                st.write("")
 
         st.write(f"💰 **보유 금액:** {my_data['money']:,}원")
         
@@ -244,7 +239,6 @@ else:
         if not my_inv:
             st.info("소장한 카드가 없습니다.")
         else:
-            # 중복 노출 최소화를 위한 키 생성 및 유니크 체크
             seen_items = []
             for idx, card in enumerate(my_inv):
                 card_key = f"{card['name']}_{card['rank']}_{card['awaken']}_{card['training']}"
@@ -254,7 +248,6 @@ else:
                 
                 p_info = next((p for p in all_players if p["name"] == card["name"]), None)
                 if p_info:
-                    # 동일 스펙 수량 계산
                     count = sum(1 for c in my_inv if c['name'] == card['name'] and c['rank'] == card['rank'] and c['awaken'] == card['awaken'] and c['training'] == card['training'])
                     
                     st.write(f"🏃‍♂️ **[{p_info['grade']}] <span class='pos-badge'>{p_info['pos']}</span> {card['name']}** ({count}장)", unsafe_allow_html=True)
@@ -266,9 +259,9 @@ else:
                     
                     col_i1, col_i2 = st.columns([1, 1])
                     with col_i1:
-                        # 히샤를리송은 고유 판매가, 나머지는 오리지널 판매가 적용
                         curr_sell_price = richarlison_master["sell_price"] if card["name"] == "HM24 히샤를리송" else p_info["sell_price"]
-                        st.write(f"💵 {curr_sell_price Keep:,.0f}원")
+                        # 🛠️ [수정 완료] 문법 에러 유발 단어 제거 및 깔끔하게 출력 변경
+                        st.write(f"💵 {curr_sell_price:,}원")
                     with col_i2:
                         if st.button("💰 판매", key=f"sell_{card_key}_{idx}"):
                             my_inv.remove(card)
@@ -278,14 +271,12 @@ else:
                     
                     with st.expander("🔍 실물 보기"):
                         try:
-                            # 히샤를리송 이미지 예외 처리
                             img_path = "HM24 히샤를리송 5진화 6각성 21특훈.png" if card["name"] == "HM24 히샤를리송" else p_info['image']
                             st.image(img_path, use_container_width=True)
                         except:
                             st.write("이미지 없음")
                     st.write("---")
 
-    # 카드팩 상점, 선수 상점, 프로필 설정 분기
     tab_shop, tab_player_market, tab_profile = st.tabs(["🛒 카드 팩 상점", "🏃‍♂️ 선수 상점", "👤 내 프로필 설정"])
 
     # ==================== 탭 1: 카드 팩 상점 화면 ====================
@@ -319,12 +310,10 @@ else:
                     else:
                         lucky_player = random.choice(normal_players)
                 
-                # 상점 오픈은 기본 카드이므로 무조건 0진, 0각, 0특으로 인벤토리에 세팅
                 new_card = {"name": lucky_player["name"], "rank": 0, "awaken": 0, "training": 0}
                 users_db[my_id]["inventory"].append(new_card)
                 save_db(users_db)
                 
-                # 결과 다이얼로그용 전송 데이터 조립
                 display_res = lucky_player.copy()
                 display_res.update(new_card)
                 st.session_state.draw_result = display_res
@@ -398,7 +387,7 @@ else:
             st.success(f"🎉 **[{p_res['grade']}] {p_res['pos']} {p_res['name']}** 선수를 뽑았습니다!")
             st.markdown(f"📊 **획득 스펙:** {p_res['rank']}진화 | {p_res['awaken']}각성 | {p_res['training']}특훈")
             
-            col_c1, col_c2, col_c3 = st.columns([1, 1.5, 1])
+            col_c2 = st.columns([1, 1.5, 1])[1]
             with col_c2:
                 try:
                     img_path = "HM24 히샤를리송 5진화 6각성 21특훈.png" if p_res["name"] == "HM24 히샤를리송" else p_res['image']
@@ -408,7 +397,7 @@ else:
             time.sleep(1)
             st.rerun()
 
-    # ==================== 🏃‍♂️ 탭 2: 선수 상점 화면 (신규 개장) ====================
+    # ==================== 🏃‍♂️ 탭 2: 선수 상점 화면 ====================
     with tab_player_market:
         st.title("🏃‍♂️ 선수 다이렉트 영입 상점")
         st.write("---")
@@ -417,15 +406,12 @@ else:
         col_m1, col_m2 = st.columns([1, 2])
         
         with col_m1:
-            try:
-                # 업로드된 이미지를 불러옵니다.
+            if os.path.exists("HM24 히샤를리송 5진화 6각성 21특훈.png"):
                 st.image("HM24 히샤를리송 5진화 6각성 21특훈.png", use_container_width=True)
-            except:
-                # 파일이 준비되지 않았거나 탐색 안 될 경우 원본 스크린샷으로 대체 구동 지원
-                if os.path.exists("Screenshot_20260616-123143~2.png"):
-                    st.image("Screenshot_20260616-123143~2.png", caption="HM24 히샤를리송 카드", use_container_width=True)
-                else:
-                    st.info("🖼️ 선수 이미지 배치 대기 중")
+            elif os.path.exists("Screenshot_20260616-123143~2.png"):
+                st.image("Screenshot_20260616-123143~2.png", caption="HM24 히샤를리송", use_container_width=True)
+            else:
+                st.info("🖼️ 선수 이미지 배치 대기 중")
                     
         with col_m2:
             st.markdown(f"### **[{richarlison_master['grade']}] {richarlison_master['name']}**")
@@ -440,12 +426,10 @@ else:
             st.write("---")
             st.subheader(f"💵 영입 비용: **{richarlison_master['buy_price']:,} 원**")
             
-            # 구매 처리 버튼
             if st.button("🤝 이적료 지불 및 즉시 영입", type="primary", use_container_width=True):
                 if my_data["money"] < richarlison_master["buy_price"]:
-                    st.error("❌ 잔고가 부족합니다! 카드팩 상점에서 소장 카드를 판매하거나 재정을 확보하세요.")
+                    st.error("❌ 잔고가 부족합니다! 소장고의 카드를 판매하여 재정을 확보하세요.")
                 else:
-                    # 차감 및 인벤토리 삽입 (히샤를리송만 5, 6, 21 보존 상태로 들어감)
                     users_db[my_id]["money"] -= richarlison_master["buy_price"]
                     users_db[my_id]["inventory"].append({
                         "name": richarlison_master["name"],
@@ -478,18 +462,12 @@ else:
             """, unsafe_allow_html=True)
             
         with col_prof_logo:
-            if my_data["team"] == "토트넘":
-                if os.path.exists("토트넘로고.jpeg"):
-                    st.markdown("<p style='text-align:center; font-weight:bold;'>🛡️ 선택 구단 엠블럼</p>", unsafe_allow_html=True)
-                    st.image("토트넘로고.jpeg", width=180)
-            elif my_data["team"] == "바르셀로나":
-                if os.path.exists("바로셀로나.svg"):
-                    st.markdown("<p style='text-align:center; font-weight:bold;'>🛡️ 선택 구단 엠블럼</p>", unsafe_allow_html=True)
-                    st.image("바로셀로나.svg", width=180)
-            elif my_data["team"] == "레알 마드리드":
-                if os.path.exists("레알마드리드.svg"):
-                    st.markdown("<p style='text-align:center; font-weight:bold;'>🛡️ 선택 구단 엠블럼</p>", unsafe_allow_html=True)
-                    st.image("레알마드리드.svg", width=180)
+            if my_data["team"] == "토트넘" and os.path.exists("토트넘로고.jpeg"):
+                st.image("토트넘로고.jpeg", width=180)
+            elif my_data["team"] == "바르셀로나" and os.path.exists("바로셀로나.svg"):
+                st.image("바로셀로나.svg", width=180)
+            elif my_data["team"] == "레알 마드리드" and os.path.exists("레알마드리드.svg"):
+                st.image("레알마드리드.svg", width=180)
 
         st.subheader("🛡️ 선호 팀 고르기")
         st.write("팀을 변경하면 실시간으로 클럽 데이터베이스에 저장됩니다.")
