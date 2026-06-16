@@ -6,7 +6,7 @@ import base64
 import json
 from datetime import datetime
 
-# 1. 페이지 설정
+# 1. 페이지 설정 (화면을 꽉 차게 기본 세팅)
 st.set_page_config(page_title="동네 축구 카드 매니저", page_icon="⚽", layout="wide")
 
 # [영구 파일 DB 로드/세이브]
@@ -57,13 +57,23 @@ tots_son_players = [
 
 all_players = rare_players + normal_players + tots_son_players
 
-# 3. 스타일 및 모바일 패드 스크롤 패치
+# 3. 🔥 패드/모바일 해상도 강제 최적화 스타일 패치
 st.markdown("""
     <style>
+    /* 패드 및 모바일 기기에서 뷰포트 크기를 100%로 강제 고정 */
     html, body, [data-testid="stAppViewContainer"] {
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
+        width: 100% !important;
+        font-size: 16px !important; /* 글자 크기 최적화 */
     }
+    
+    /* 글자가 자라나거나 찌그러지는 현상 방지 */
+    h1, h2, h3, p, span, label {
+        font-family: sans-serif !important;
+        letter-spacing: normal !important;
+    }
+    
     .stTextInput input {
         color: #ece8e1 !important;
         background-color: #232936 !important;
@@ -75,6 +85,17 @@ st.markdown("""
         border-radius: 10px;
         border: 1px solid #3a4454;
         margin-bottom: 20px;
+    }
+    
+    /* 모바일/패드 스크린 전용 반응형 추가 패치 */
+    @media (max-width: 1024px) {
+        [data-testid="stSidebar"] {
+            width: 100% !important;
+        }
+        .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -153,7 +174,7 @@ else:
         team_emoji = "👑" if my_data["team"] == "레알 마드리드" else "🔵" if my_data["team"] == "바르셀로나" else "⚪" if my_data["team"] == "토트넘" else "🏴"
         st.write(f"🛡️ **소속 팀:** {team_emoji} {my_data['team']}")
         
-        # 사이드바 로고 출력 통합 처리
+        # 사이드바 로고 출력
         if my_data["team"] == "토트넘":
             if os.path.exists("토트넘로고.jpeg"):
                 st.image("토트넘로고.jpeg", width=120)
@@ -339,7 +360,6 @@ else:
             """, unsafe_allow_html=True)
             
         with col_prof_logo:
-            # 프로필 메인 대시보드 로고 연동
             if my_data["team"] == "토트넘":
                 if os.path.exists("토트넘로고.jpeg"):
                     st.markdown("<p style='text-align:center; font-weight:bold;'>🛡️ 선택 구단 엠블럼</p>", unsafe_allow_html=True)
