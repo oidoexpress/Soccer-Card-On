@@ -19,7 +19,6 @@ def load_db():
                 return json.load(f)
         except:
             pass
-    # 기본값 구조 변경: "team"과 "created_at" 필드 추가
     return {"test": {"password": "1234", "money": 10000, "inventory": [], "team": "선택 없음", "created_at": "2026-01-01"}}
 
 def save_db(db_data):
@@ -70,7 +69,6 @@ st.markdown("""
         background-color: #232936 !important;
         border: 1px solid #ff4655 !important;
     }
-    /* 프로필 가독성을 위한 커스텀 카드 스타일 */
     .profile-card {
         background-color: #1e2430;
         padding: 20px;
@@ -121,7 +119,6 @@ if st.session_state.current_user is None:
                 elif user_id == "" or user_pw == "":
                     st.warning("⚠️ 아이디와 비밀번호를 입력해 주세요.")
                 else:
-                    # 회원가입 시 기본 팀과 가입일자 추가 저장
                     today_str = datetime.today().strftime('%Y-%m-%d')
                     users_db[user_id] = {
                         "password": user_pw, 
@@ -144,17 +141,15 @@ else:
     my_id = st.session_state.current_user
     my_data = users_db[my_id]
     
-    # 과거 가입 유저 마이그레이션 (에러 방지용 안전 장치)
     if "team" not in my_data:
         my_data["team"] = "선택 없음"
     if "created_at" not in my_data:
         my_data["created_at"] = "알 수 없음"
 
-    # 사이드바 영역 (내 정보 및 소장고 항상 고정)
+    # 사이드바 영역
     with st.sidebar:
         st.header("⚽ 매니저 센터")
         st.write(f"👤 **유저:** {my_id}님")
-        # 구단 배지 디자인 효과
         team_emoji = "⚪" if my_data["team"] == "레알 마드리드" else "🔵" if my_data["team"] == "바르셀로나" else "⚪" if my_data["team"] == "토트넘" else "🏴"
         st.write(f"🛡️ **소속 팀:** {team_emoji} {my_data['team']}")
         st.write(f"💰 **보유 금액:** {my_data['money']:,}원")
@@ -195,7 +190,7 @@ else:
                             st.write("이미지 없음")
                     st.write("---")
 
-    # 🎯 [메인 상단 네비게이션] 상점과 프로필 페이지 분기 탭 생성
+    # 메인 탭 분기
     tab_shop, tab_profile = st.tabs(["🛒 카드 팩 상점", "👤 내 프로필 설정"])
 
     # ==================== 탭 1: 상점 화면 ====================
@@ -269,7 +264,7 @@ else:
         st.write("---")
 
         # 손흥민 스페셜 팩
-        st.markdown("### ### 🔥 손흥민 TOTS 스페셜 프리미엄 팩")
+        st.markdown("### 🔥 손흥민 TOTS 스페셜 프리미엄 팩")
         st.write("💵 **비용:** 100,000원 | 📊 **확률:** 손흥민 TOTS 한정판 카드 100% 확정 등장!")
         
         btn_text_son = f"⏳ 손흥민 소환 연출 대기 중... ({rem_time}초)" if is_cooling else "🇰🇷 손흥민 스페셜 팩 오픈! (100,000원)"
@@ -304,26 +299,41 @@ else:
             time.sleep(1)
             st.rerun()
 
-    # ==================== 💥 탭 2: 내 프로필 설정 화면 ====================
+    # ==================== 탭 2: 내 프로필 설정 화면 ====================
     with tab_profile:
         st.title("👤 유저 프로필 센터")
         st.write("---")
         
-        # 카드 레이아웃 스타일 적용하여 대시보드 출력
-        st.markdown(f"""
-        <div class="profile-card">
-            <h3>🆔 구단주 정보</h3>
-            <p>• <b>구단주 ID:</b> {my_id}</p>
-            <p>• <b>창단일 (가입일):</b> {my_data['created_at']}</p>
-            <p>• <b>현재 보유 잔고:</b> {my_data['money']:,} 원</p>
-            <p>• <b>총 보유 카드 장수:</b> {len(my_data['inventory'])} 장</p>
-        </div>
-        """, unsafe_allow_html=True)
+        # 레이아웃을 2개 컬럼으로 쪼개서 왼쪽엔 텍스트 정보, 오른쪽엔 고른 팀 로고 배치
+        col_prof_text, col_prof_logo = st.columns([2, 1])
         
+        with col_prof_text:
+            st.markdown(f"""
+            <div class="profile-card">
+                <h3>🆔 구단주 정보</h3>
+                <p>• <b>구단주 ID:</b> {my_id}</p>
+                <p>• <b>창단일 (가입일):</b> {my_data['created_at']}</p>
+                <p>• <b>현재 보유 잔고:</b> {my_data['money']:,} 원</p>
+                <p>• <b>총 보유 카드 장수:</b> {len(my_data['inventory'])} 장</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col_prof_logo:
+            # 💥 [핵심 기능] 토트넘을 골랐고 로고 파일이 존재할 때 실물 로고 박아주기
+            if my_data["team"] == "토트넘":
+                if os.path.exists("토트넘로고.jpeg"):
+                    st.markdown("<p style='text-align:center; font-weight:bold;'>🛡️ 선택 구단 엠블럼</p>", unsafe_allow_html=True)
+                    st.image("토트넘로고.jpeg", width=180)
+                else:
+                    st.warning("⚠️ '토트넘로고.jpeg' 파일이 폴더에 없습니다.")
+            elif my_data["team"] in ["레알 마드리드", "바르셀로나"]:
+                st.info(f"⚪ {my_data['team']} 로고 파일은 아직 준비 중입니다.")
+            else:
+                st.write("")
+
         st.subheader("🛡️ 선호 팀 고르기")
-        st.write("팀을 선택하면 즉시 클럽 데이터베이스에 반영되며 사이드바 프로필에 구단 배지가 표시됩니다.")
+        st.write("팀을 변경하면 실시간으로 클럽 데이터베이스에 저장됩니다.")
         
-        # 선택지 리스트 제공 및 현재 유저의 선택 상태를 디폴트로 매핑
         teams_list = ["선택 없음", "레알 마드리드", "바르셀로나", "토트넘"]
         try:
             current_team_index = teams_list.index(my_data["team"])
@@ -332,11 +342,10 @@ else:
             
         selected_team = st.selectbox("나의 최애 클럽팀을 선택하세요", teams_list, index=current_team_index)
         
-        # 변경 사항 감지 및 실시간 영구 파일 저장
         if selected_team != my_data["team"]:
             users_db[my_id]["team"] = selected_team
             save_db(users_db)
-            st.success(f"✅ 구단주님의 선호 클럽이 **{selected_team}**으로 성공적으로 변경되었습니다!")
+            st.success(f"✅ 구단주님의 선호 클럽이 **{selected_team}**으로 변경되었습니다!")
             time.sleep(1)
             st.rerun()
 
