@@ -59,7 +59,7 @@ richarlison_master = {
     "name": "HM24 히샤를리송", 
     "image": "HM24 히샤를리송 5진화 6각성 21특훈.png", 
     "buy_price": 500000, 
-    "sell_price": 250000, 
+    "sell_price": 500000, 
     "grade": "🌟 HARD WORKER", 
     "pos": "ST",
     "ovr": 145,
