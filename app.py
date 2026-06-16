@@ -150,10 +150,10 @@ else:
     with st.sidebar:
         st.header("⚽ 매니저 센터")
         st.write(f"👤 **유저:** {my_id}님")
-        team_emoji = "⚪" if my_data["team"] == "레알 마드리드" else "🔵" if my_data["team"] == "바르셀로나" else "⚪" if my_data["team"] == "토트넘" else "🏴"
+        team_emoji = "👑" if my_data["team"] == "레알 마드리드" else "🔵" if my_data["team"] == "바르셀로나" else "⚪" if my_data["team"] == "토트넘" else "🏴"
         st.write(f"🛡️ **소속 팀:** {team_emoji} {my_data['team']}")
         
-        # 사이드바 로고 출력 로직
+        # 사이드바 로고 출력 통합 처리
         if my_data["team"] == "토트넘":
             if os.path.exists("토트넘로고.jpeg"):
                 st.image("토트넘로고.jpeg", width=120)
@@ -167,7 +167,11 @@ else:
             else:
                 st.caption("⚠️ '바로셀로나.svg' 누락됨")
         elif my_data["team"] == "레알 마드리드":
-            st.caption(f"ℹ️ {my_data['team']} 엠블럼 준비 중")
+            if os.path.exists("레알마드리드.svg"):
+                st.image("레알마드리드.svg", width=120)
+                st.write("")
+            else:
+                st.caption("⚠️ '레알마드리드.svg' 누락됨")
 
         st.write(f"💰 **보유 금액:** {my_data['money']:,}원")
         
@@ -335,6 +339,7 @@ else:
             """, unsafe_allow_html=True)
             
         with col_prof_logo:
+            # 프로필 메인 대시보드 로고 연동
             if my_data["team"] == "토트넘":
                 if os.path.exists("토트넘로고.jpeg"):
                     st.markdown("<p style='text-align:center; font-weight:bold;'>🛡️ 선택 구단 엠블럼</p>", unsafe_allow_html=True)
@@ -348,7 +353,11 @@ else:
                 else:
                     st.warning("⚠️ '바로셀로나.svg' 파일이 폴더에 없습니다.")
             elif my_data["team"] == "레알 마드리드":
-                st.info(f"⚪ {my_data['team']} 로고 파일은 아직 준비 중입니다.")
+                if os.path.exists("레알마드리드.svg"):
+                    st.markdown("<p style='text-align:center; font-weight:bold;'>🛡️ 선택 구단 엠블럼</p>", unsafe_allow_html=True)
+                    st.image("레알마드리드.svg", width=180)
+                else:
+                    st.warning("⚠️ '레알마드리드.svg' 파일이 폴더에 없습니다.")
 
         st.subheader("🛡️ 선호 팀 고르기")
         st.write("팀을 변경하면 실시간으로 클럽 데이터베이스에 저장됩니다.")
