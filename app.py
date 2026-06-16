@@ -19,7 +19,7 @@ def load_db():
                 return json.load(f)
         except:
             pass
-    return {"test": {"password": "1234", "money": 600000, "inventory": [], "team": "선택 없음", "created_at": "2026-01-01"}}
+    return {"test": {"password": "1234", "money": 600000, "inventory": [], "team": "선택 없음", "created_at": "2026-01-01", "used_coupons": [], "last_coupon_time": 0}}
 
 def save_db(db_data):
     with open(DB_FILE, "w", encoding="utf-8") as f:
@@ -35,17 +35,17 @@ if "draw_result" not in st.session_state:
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 📋 카드 데이터 마스터 정의 (오버롤 정보 추가 완료)
+# 2. 📋 카드 데이터 마스터 정의
 rare_players = [
     {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "GK", "ovr": 120},
-    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 51000, "grade": "🏆 UCL", "pos": "ST", "ovr": 136},
+    {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "ST", "ovr": 136},
     {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 51000, "grade": "🏆 UCL", "pos": "CDM", "ovr": 136},
     {"name": "하피냐", "image": "UEFA Champions League 25 XI 하피냐.png", "sell_price": 52000, "grade": "🏆 UCL", "pos": "RWF", "ovr": 138}
 ]
 
 normal_players = [
     {"name": "노무현", "image": "KICK-OFF 23-24 노무현.png", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "CF", "ovr": 114},
-    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "CB", "ovr": 60}, # 임의 기본값 지정
+    {"name": "안창혁", "image": "안창혁.png", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "CB", "ovr": 60},
     {"name": "크리스티아누 호날두", "image": "KICK OFF 21 크리스티아누 호날두.webp", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "ST", "ovr": 113}
 ]
 
@@ -55,7 +55,6 @@ tots_son_players = [
     {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 118}
 ]
 
-# ✨ 히샤를리송 마스터 데이터 (오버롤 145 적용)
 richarlison_master = {
     "name": "HM24 히샤를리송", 
     "image": "HM24 히샤를리송 5진화 6각성 21특훈.png", 
@@ -105,7 +104,6 @@ st.markdown("""
         font-size: 12px;
         margin-right: 5px;
     }
-    /* 오버롤 전용 뱃지 스타일 (레드/골드 느낌) */
     .ovr-badge {
         background-color: #d32f2f;
         color: #ffffff;
@@ -185,7 +183,9 @@ if st.session_state.current_user is None:
                         "money": 10000, 
                         "inventory": [],
                         "team": "선택 없음",
-                        "created_at": today_str
+                        "created_at": today_str,
+                        "used_coupons": [],
+                        "last_coupon_time": 0
                     }
                     save_db(users_db)
                     st.success("🎉 회원가입 완료! 로그인을 선택하고 다시 눌러주세요.")
@@ -205,6 +205,10 @@ else:
         my_data["team"] = "선택 없음"
     if "created_at" not in my_data:
         my_data["created_at"] = "알 수 없음"
+    if "used_coupons" not in my_data:
+        my_data["used_coupons"] = []
+    if "last_coupon_time" not in my_data:
+        my_data["last_coupon_time"] = 0
 
     # 유저 인벤토리 구조 마이그레이션 안전장치
     updated_inv = []
@@ -234,6 +238,41 @@ else:
 
         st.write(f"💰 **보유 금액:** {my_data['money']:,}원")
         
+        # 🎁 선물코드 입력 섹션 (계정당 1주일 1회 제한 로직)
+        st.write("---")
+        st.subheader("🎁 선물코드 입력")
+        
+        now_ts = time.time()
+        last_use = my_data["last_coupon_time"]
+        cooldown_7days = 7 * 24 * 60 * 60  # 7일을 초 단위로 계산
+        
+        # 남은 시간 확인
+        if now_ts - last_use < cooldown_7days:
+            rem_seconds = int(cooldown_7days - (now_ts - last_use))
+            rem_days = rem_seconds // (24 * 3600)
+            rem_hours = (rem_seconds % (24 * 3600)) // 3600
+            rem_mins = (rem_seconds % 3600) // 60
+            
+            st.warning(f"⏳ 주간 쿠폰 사용 완료\n({rem_days}일 {rem_hours}시간 {rem_mins}분 후 가능)")
+        else:
+            with st.form(key="coupon_form", clear_on_submit=True):
+                coupon_code = st.text_input("코드를 입력하세요", placeholder="예: SOCCER2026").strip()
+                coupon_submit = st.form_submit_button("확인", use_container_width=True)
+                
+                if coupon_submit:
+                    if coupon_code.upper() == "SOCCER2026":
+                        users_db[my_id]["money"] += 50000
+                        users_db[my_id]["last_coupon_time"] = now_ts  # 현재 사용한 타임스탬프 기록
+                        save_db(users_db)
+                        st.success("💰 주간 보상 전송 완료! (+50,000원)")
+                        time.sleep(1)
+                        st.rerun()
+                    elif coupon_code == "":
+                        st.warning("⚠️ 코드를 입력해 주세요.")
+                    else:
+                        st.error("❌ 잘못되었거나 유효기간이 지난 코드입니다.")
+        
+        st.write("---")
         if st.button("🔒 로그아웃", use_container_width=True):
             st.session_state.current_user = None
             st.session_state.draw_result = None
@@ -258,7 +297,6 @@ else:
                 if p_info:
                     count = sum(1 for c in my_inv if c['name'] == card['name'] and c['rank'] == card['rank'] and c['awaken'] == card['awaken'] and c['training'] == card['training'])
                     
-                    # 제목 부분에 OVR 표시 추가
                     st.write(f"🏃‍♂️ <span class='ovr-badge'>{p_info['ovr']}</span>**[{p_info['grade']}] <span class='pos-badge'>{p_info['pos']}</span> {card['name']}** ({count}장)", unsafe_allow_html=True)
                     st.markdown(f"""
                         <span class='stat-badge badge-rank'>{card['rank']}진</span>
