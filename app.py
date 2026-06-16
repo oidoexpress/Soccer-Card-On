@@ -35,9 +35,9 @@ if "draw_result" not in st.session_state:
 if "cooldown_time" not in st.session_state:
     st.session_state.cooldown_time = 0
 
-# 2. 📋 카드 데이터 정의 (포지션 'pos' 속성 추가)
+# 2. 📋 카드 데이터 정의 (마크롱 포지션 GK로 수정 완료)
 rare_players = [
-    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "CM"},
+    {"name": "마크롱", "image": "UEFA Champions League 24 STAR 마크롱.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "GK"},
     {"name": "세루 기라시", "image": "UEFA Champions League 25 STAR 세루 기라시.png", "sell_price": 50000, "grade": "🏆 UCL", "pos": "ST"},
     {"name": "주앙 네베스", "image": "UEFA Champions League 25 STAR 주앙 네베스.png", "sell_price": 51000, "grade": "🏆 UCL", "pos": "CDM"},
     {"name": "하피냐", "image": "UEFA Champions League 25 XI 하피냐.png", "sell_price": 52000, "grade": "🏆 UCL", "pos": "RWF"}
@@ -49,7 +49,6 @@ normal_players = [
     {"name": "크리스티아누 호날두", "image": "KICK OFF 21 크리스티아누 호날두.webp", "sell_price": 1000, "grade": "🏃 KICK-OFF", "pos": "ST"}
 ]
 
-# ✨ [포커스] 손흥민 선수의 모든 카드는 LWF(좌측 윙 포워드)로 설정
 tots_son_players = [
     {"name": "22TOTS 손흥민", "image": "22TOTS 손흥민.webp", "sell_price": 80000, "grade": "🔥 TOTS", "pos": "LWF"},
     {"name": "23TOTS MOMENT 손흥민", "image": "23TOTS MOMENT 손흥민.webp", "sell_price": 95000, "grade": "🔥 TOTS", "pos": "LWF"},
@@ -212,7 +211,6 @@ else:
                 p_info = next((p for p in all_players if p["name"] == item), None)
                 
                 if p_info:
-                    # 포지션 뱃지를 이름 옆에 결합하여 가시성 확보
                     st.write(f"🏃‍♂️ **[{p_info['grade']}] <span class='pos-badge'>{p_info['pos']}</span> {item}** ({count}장)", unsafe_allow_html=True)
                     col_i1, col_i2 = st.columns([1, 1])
                     with col_i1:
@@ -329,7 +327,6 @@ else:
         if is_cooling and st.session_state.draw_result:
             st.write("---")
             p_res = st.session_state.draw_result
-            # 뽑았을 때 메시지에도 포지션 연동 완료
             st.success(f"🎉 **[{p_res['grade']}] {p_res['pos']} {p_res['name']}** 선수를 뽑았습니다!")
             
             col_c1, col_c2, col_c3 = st.columns([1, 1.5, 1])
