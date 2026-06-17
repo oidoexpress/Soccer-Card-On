@@ -19,7 +19,6 @@ def load_db():
                 return json.load(f)
         except:
             pass
-    # test 계정 기본 머니: 기존 600,000원 + 추가 지원 2,000,000원 = 총 2,600,000원 세팅
     return {"test": {"password": "1234", "money": 2600000, "inventory": [], "team": "선택 없음", "created_at": "2026-01-01", "used_coupons": [], "last_coupon_time": 0}}
 
 def save_db(db_data):
@@ -62,7 +61,7 @@ tots_son_players = [
     {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 118}
 ]
 
-# 상점 마스터 데이터 (히샤를리송 & 루카스 모우라 추가)
+# ★ [수정완료] 히샤를리송 6진화(rank=6), 5강화/각성(awaken=5) 올바른 매칭 교정
 richarlison_master = {
     "name": "HM24 히샤를리송", 
     "image": "HM24 히샤를리송 5진화 6각성 21특훈.png", 
@@ -71,17 +70,19 @@ richarlison_master = {
     "grade": "🌟 HARD WORKER", 
     "pos": "ST",
     "ovr": 145,
-    "rank": 5, "awaken": 6, "training": 21
+    "rank": 6,       # 6진화
+    "awaken": 5,     # 5강화(각성)
+    "training": 21   # 21특훈
 }
 
 moura_master = {
     "name": "루카스 모우라",
     "image": "루카스 모우라 7진화.png",
     "buy_price": 500000,
-    "sell_price": 500000, # 판매가-구매가 50만 원 동률 보존 법선 적용
+    "sell_price": 500000, 
     "grade": "⚡ SPECIAL EDITION",
-    "pos": "RW", # 우측 윙 포워드 포지션
-    "ovr": 145,  # 오버롤 145
+    "pos": "RW", 
+    "ovr": 145,  
     "rank": 7, "awaken": 0, "training": 0
 }
 
@@ -213,17 +214,21 @@ else:
     if "used_coupons" not in my_data: my_data["used_coupons"] = []
     if "last_coupon_time" not in my_data: my_data["last_coupon_time"] = 0
 
-    # 마이그레이션 및 동기화 안전장치
+    # ★ [수정완료] 마이그레이션 예외처리 및 데이터 교정 (6진화 5강화 21특훈 반영)
     updated_inv = []
     for item in my_data["inventory"]:
         if isinstance(item, str):
             if item == "HM24 히샤를리송":
-                updated_inv.append({"name": "HM24 히샤를리송", "rank": 5, "awaken": 6, "training": 21})
+                updated_inv.append({"name": "HM24 히샤를리송", "rank": 6, "awaken": 5, "training": 21})
             elif item == "루카스 모우라":
                 updated_inv.append({"name": "루카스 모우라", "rank": 7, "awaken": 0, "training": 0})
             else:
                 updated_inv.append({"name": item, "rank": 0, "awaken": 0, "training": 0})
         else:
+            if item["name"] == "HM24 히샤를리송" and (item["rank"] == 5 or item["awaken"] == 6):
+                item["rank"] = 6
+                item["awaken"] = 5
+                item["training"] = 21
             updated_inv.append(item)
     my_data["inventory"] = updated_inv
 
@@ -233,7 +238,6 @@ else:
         st.write(f"👤 **유저:** {my_id}님")
         team_emoji = "👑" if my_data["team"] == "레알 마드리드" else "🔵" if my_data["team"] == "바르셀로나" else "⚪" if my_data["team"] == "토트넘" else "🏴"
         st.write(f"🛡️ **소속 팀:** {team_emoji} {my_data['team']}")
-        
         st.write(f"💰 **보유 금액:** {my_data['money']:,}원")
         
         # 주간 선물코드 시스템
@@ -281,9 +285,10 @@ else:
                     count = sum(1 for c in my_inv if c['name'] == card['name'] and c['rank'] == card['rank'] and c['awaken'] == card['awaken'] and c['training'] == card['training'])
                     
                     st.write(f"🏃‍♂️ <span class='ovr-badge'>{p_info['ovr']}</span>**[{p_info['grade']}] <span class='pos-badge'>{p_info['pos']}</span> {card['name']}** ({count}장)", unsafe_allow_html=True)
-                    st.markdown(f"<span class='stat-badge badge-rank'>{card['rank']}진</span>", unsafe_allow_html=True)
                     
-                    # 동률 보존 법선 판매가 매칭
+                    # ★ [수정완료] 내 소장고 리스트에 [진화 / 강화 / 특훈] 수치 배지 3단계 실시간 완전 노출 패치
+                    st.markdown(f"<span class='stat-badge badge-rank'>{card['rank']}진화</span><span class='stat-badge badge-awaken'>{card['awaken']}강화</span><span class='stat-badge badge-train'>{card['training']}특훈</span>", unsafe_allow_html=True)
+                    
                     if card["name"] == "HM24 히샤를리송":
                         curr_sell_price = richarlison_master["sell_price"]
                     elif card["name"] == "루카스 모우라":
@@ -432,7 +437,7 @@ else:
         st.write("---")
         st.subheader("🔥 이주의 한정판 스페셜 매물 리스트")
         
-        # 1번 매물: 루카스 모우라 (신규 추가 항목)
+        # 1번 매물: 루카스 모우라
         st.markdown("### [NEW] 매물 #1 - 스페셜 에디션 7진화")
         col_m1_a, col_m2_a = st.columns([1, 2])
         with col_m1_a:
@@ -463,7 +468,7 @@ else:
                     
         st.write("---")
         
-        # 2번 매물: 기존 히샤를리송 유지
+        # 2번 매물: 히샤를리송
         st.markdown("### 매물 #2 - 하드 워커 고강화 컬렉션")
         col_m1_b, col_m2_b = st.columns([1, 2])
         with col_m1_b:
@@ -472,6 +477,7 @@ else:
         with col_m2_b:
             st.markdown(f"### <span class='ovr-badge' style='font-size:20px; padding:4px 10px;'>{richarlison_master['ovr']}</span> **[{richarlison_master['grade']}] {richarlison_master['name']}**", unsafe_allow_html=True)
             st.markdown(f"**포지션:** <span class='pos-badge'>{richarlison_master['pos']}</span>", unsafe_allow_html=True)
+            st.markdown(f"<span class='stat-badge badge-rank'>{richarlison_master['rank']}진화</span><span class='stat-badge badge-awaken'>{richarlison_master['awaken']}강화</span><span class='stat-badge badge-train'>{richarlison_master['training']}특훈</span>", unsafe_allow_html=True)
             st.write(f"💵 영입 비용: **{richarlison_master['buy_price']:,} 원**")
             
             if st.button("🤝 히샤를리송 즉시 영입", key="buy_richar", use_container_width=True):
