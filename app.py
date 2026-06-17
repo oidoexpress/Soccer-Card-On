@@ -19,7 +19,7 @@ def load_db():
                 return json.load(f)
         except:
             pass
-    return {"test": {"password": "1234", "money": 2600000, "inventory": [], "team": "선택 없음", "created_at": "2026-01-01", "used_coupons": [], "last_coupon_time": 0}}
+    return {"test": {"password": "1234", "money": 2600000, "inventory": [], "team": "선택 없음", "created_at": "2026-01-01", "used_coupons": [], "last_coupon_time": 0, "formation": {}}}
 
 def save_db(db_data):
     with open(DB_FILE, "w", encoding="utf-8") as f:
@@ -61,7 +61,6 @@ tots_son_players = [
     {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 118}
 ]
 
-# 히샤를리송 사양 (5진화, 6강화, 21특훈)
 richarlison_master = {
     "name": "HM24 히샤를리송", 
     "image": "HM24 히샤를리송 5진화 6각성 21특훈.png", 
@@ -75,7 +74,6 @@ richarlison_master = {
     "training": 21   
 }
 
-# 루카스 모우라 사양 (0진화, 7강화, 0특훈)
 moura_master = {
     "name": "루카스 모우라",
     "image": "루카스 모우라 7진화.png",
@@ -89,7 +87,6 @@ moura_master = {
     "training": 0
 }
 
-# ★ [신규 추가] TOTY 라민 야말 사양 (0강화, 0진화, 0특훈, 60만원)
 yamal_master = {
     "name": "TOTY 라민 야말",
     "image": "TOTY 라민 야말.png",
@@ -160,6 +157,23 @@ st.markdown("""
     .badge-awaken { background-color: #ff9800; }
     .badge-rank { background-color: #9c27b0; }
     .badge-train { background-color: #00bcd4; }
+    
+    /* 포메이션 보드 스타일 */
+    .formation-pitch {
+        background-color: #1b4d22;
+        border: 3px solid #ffffff;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+    .pitch-slot {
+        background-color: rgba(255, 255, 255, 0.15);
+        border: 2px dashed #ffffff;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        color: white;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -210,7 +224,8 @@ if st.session_state.current_user is None:
                         "team": "선택 없음",
                         "created_at": today_str,
                         "used_coupons": [],
-                        "last_coupon_time": 0
+                        "last_coupon_time": 0,
+                        "formation": {}
                     }
                     save_db(users_db)
                     st.success("🎉 회원가입 완료! 로그인을 선택하고 다시 눌러주세요.")
@@ -230,6 +245,7 @@ else:
     if "created_at" not in my_data: my_data["created_at"] = "알 수 없음"
     if "used_coupons" not in my_data: my_data["used_coupons"] = []
     if "last_coupon_time" not in my_data: my_data["last_coupon_time"] = 0
+    if "formation" not in my_data: my_data["formation"] = {}
 
     # 데이터 보정 마이그레이션 안전장치
     updated_inv = []
@@ -312,8 +328,6 @@ else:
                     count = sum(1 for c in my_inv if c['name'] == card['name'] and c['rank'] == card['rank'] and c['awaken'] == card['awaken'] and c['training'] == card['training'])
                     
                     st.write(f"🏃‍♂️ <span class='ovr-badge'>{p_info['ovr']}</span>**[{p_info['grade']}] <span class='pos-badge'>{p_info['pos']}</span> {card['name']}** ({count}장)", unsafe_allow_html=True)
-                    
-                    # 강화 -> 진화 -> 특훈 배지 배치 순서 유지
                     st.markdown(f"<span class='stat-badge badge-awaken'>{card['awaken']}강화</span><span class='stat-badge badge-rank'>{card['rank']}진화</span><span class='stat-badge badge-train'>{card['training']}특훈</span>", unsafe_allow_html=True)
                     
                     if card["name"] == "HM24 히샤를리송":
@@ -330,6 +344,10 @@ else:
                     with col_i2:
                         if st.button("💰 판매", key=f"sell_{card_key}_{idx}"):
                             my_inv.remove(card)
+                            # 포메이션에 배치되어 있던 카드면 해제
+                            for pos, p_name in list(my_data["formation"].items()):
+                                if p_name == card["name"]:
+                                    del my_data["formation"][pos]
                             users_db[my_id]["money"] += curr_sell_price
                             save_db(users_db)
                             st.rerun()
@@ -342,7 +360,8 @@ else:
                             st.write("이미지 없음")
                     st.write("---")
 
-    tab_shop, tab_player_market, tab_profile = st.tabs(["🛒 카드 팩 상점", "🏃‍♂️ 선수 상점", "👤 내 프로필 설정"])
+    # 탭 메뉴에 🏃‍♂️ 포메이션 & 스쿼드 추가
+    tab_shop, tab_player_market, tab_formation, tab_profile = st.tabs(["🛒 카드 팩 상점", "🏃‍♂️ 선수 상점", "📋 포메이션 & 스쿼드", "👤 내 프로필 설정"])
 
     # ==================== 탭 1: 카드 팩 상점 화면 ====================
     with tab_shop:
@@ -357,7 +376,6 @@ else:
         else:
             st.session_state.draw_result = None
 
-        # 일반 카드 팩
         st.markdown("### 🎯 동네 축구 일반 카드 팩")
         st.write("💵 **비용:** 1,000원 | 📊 **확률:** KICK-OFF (90%), UCL (10%)")
         
@@ -392,7 +410,6 @@ else:
 
         st.write("---")
 
-        # UCL 전용 프리미엄 팩
         st.markdown("### 🏆 UCL 전용 프리미엄 팩")
         st.write("💵 **비용:** 50,000원 | 📊 **확률:** UCL 등급 카드 100% 확정 등장!")
         
@@ -420,7 +437,6 @@ else:
                 
         st.write("---")
 
-        # 손흥민 스페셜 팩
         st.markdown("### 🔥 손흥민 TOTS 스페셜 프리미엄 팩")
         st.write("💵 **비용:** 100,000원 | 📊 **확률:** 손흥민 TOTS 한정판 카드 100% 확정 등장!")
         
@@ -460,20 +476,17 @@ else:
             time.sleep(1)
             st.rerun()
 
-    # ==================== 🏃‍♂️ 탭 2: 선수 상점 화면 ====================
+    # ==================== 탭 2: 선수 상점 화면 ====================
     with tab_player_market:
         st.title("🏃‍♂️ 선수 다이렉트 영입 상점")
         st.write("---")
         st.subheader("🔥 이주의 한정판 스페셜 매물 리스트")
         
-        # 1번 매물: 루카스 모우라
         st.markdown("### 매물 #1 - 스페셜 에디션 7강화 컬렉션")
         col_m1_a, col_m2_a = st.columns([1, 2])
         with col_m1_a:
             if os.path.exists("루카스 모우라 7진화.png"):
                 st.image("루카스 모우라 7진화.png", use_container_width=True)
-            else:
-                st.info("🖼️ 루카스 모우라 이미지 대기 중")
         with col_m2_a:
             st.markdown(f"### <span class='ovr-badge' style='font-size:20px; padding:4px 10px;'>{moura_master['ovr']}</span> **[{moura_master['grade']}] {moura_master['name']}**", unsafe_allow_html=True)
             st.markdown(f"**포지션:** <span class='pos-badge' style='background-color:#4caf50;'>{moura_master['pos']}</span>", unsafe_allow_html=True)
@@ -497,7 +510,6 @@ else:
                     
         st.write("---")
         
-        # 2번 매물: 히샤를리송
         st.markdown("### 매물 #2 - 하드 워커 고강화 컬렉션")
         col_m1_b, col_m2_b = st.columns([1, 2])
         with col_m1_b:
@@ -523,14 +535,11 @@ else:
 
         st.write("---")
 
-        # ★ [신규 추가] 3번 매물: TOTY 라민 야말
         st.markdown("### [NEW] 매물 #3 - TOTY 카탈루냐의 신성")
         col_m1_c, col_m2_c = st.columns([1, 2])
         with col_m1_c:
             if os.path.exists("TOTY 라민 야말.png"):
                 st.image("TOTY 라민 야말.png", use_container_width=True)
-            else:
-                st.info("🖼️ 라민 야말 이미지 대기 중")
         with col_m2_c:
             st.markdown(f"### <span class='ovr-badge' style='font-size:20px; padding:4px 10px;'>{yamal_master['ovr']}</span> **[{yamal_master['grade']}] {yamal_master['name']}**", unsafe_allow_html=True)
             st.markdown(f"**포지션:** <span class='pos-badge' style='background-color:#0288d1;'>{yamal_master['pos']} (우측 윙 포워드)</span>", unsafe_allow_html=True)
@@ -552,7 +561,131 @@ else:
                     time.sleep(1)
                     st.rerun()
 
-    # ==================== 탭 3: 내 프로필 설정 화면 ====================
+    # ==================== ★ 탭 3: 포메이션 & 스쿼드 설정 화면 ====================
+    with tab_formation:
+        st.title("📋 나의 포메이션 & 스쿼드 관리")
+        st.write("보유하고 있는 카드를 활용해 베스트 11 라인업을 구성하세요. (기본 포메이션: **4-3-3**)")
+        st.write("---")
+        
+        # 유저가 보유한 고유한 선수 이름 리스트 생성 (선택창용)
+        my_unique_names = sorted(list(set([c["name"] for c in my_data["inventory"]])))
+        player_options = ["공석 (선택 안 함)"] + my_unique_names
+
+        # 4-3-3 포메이션 슬롯 정의
+        slots = ["LW", "ST", "RW", "LCM", "CM", "RCM", "LB", "LCB", "RCB", "RB", "GK"]
+        
+        # 현재 스쿼드 총 OVR 계산 장치
+        total_ovr = 0
+        active_count = 0
+        for slot in slots:
+            current_assigned = my_data["formation"].get(slot)
+            if current_assigned and current_assigned in my_unique_names:
+                match_p = next((p for p in all_players if p["name"] == current_assigned), None)
+                if match_p:
+                    total_ovr += match_p["ovr"]
+                    active_count += 1
+        
+        avg_ovr = round(total_ovr / active_count, 1) if active_count > 0 else 0
+        st.metric(label="🛡️ 팀 스쿼드 평균 OVR", value=f"⭐ {avg_ovr}" if avg_ovr > 0 else "선수 없음")
+        
+        st.write("---")
+        
+        # 피치 레이아웃 시각화 보드
+        st.markdown("<div class='formation-pitch'>", unsafe_allow_html=True)
+        
+        # 1. 공격진 (LW, ST, RW)
+        col_f1, col_f2, col_f3 = st.columns(3)
+        with col_f1:
+            st.markdown("<div class='pitch-slot'><b>LW</b></div>", unsafe_allow_html=True)
+            init_idx = player_options.index(my_data["formation"].get("LW")) if my_data["formation"].get("LW") in player_options else 0
+            lw_pick = st.selectbox("LW 공격수 선택", player_options, index=init_idx, key="slot_LW")
+        with col_f2:
+            st.markdown("<div class='pitch-slot'><b>ST</b></div>", unsafe_allow_html=True)
+            init_idx = player_options.index(my_data["formation"].get("ST")) if my_data["formation"].get("ST") in player_options else 0
+            st_pick = st.selectbox("ST 최전방 선택", player_options, index=init_idx, key="slot_ST")
+        with col_f3:
+            st.markdown("<div class='pitch-slot'><b>RW</b></div>", unsafe_allow_html=True)
+            init_idx = player_options.index(my_data["formation"].get("RW")) if my_data["formation"].get("RW") in player_options else 0
+            rw_pick = st.selectbox("RW 공격수 선택", player_options, index=init_idx, key="slot_RW")
+            
+        st.write("")
+        
+        # 2. 미드필더진 (LCM, CM, RCM)
+        col_f4, col_f5, col_f6 = st.columns(3)
+        with col_f4:
+            st.markdown("<div class='pitch-slot'><b>LCM</b></div>", unsafe_allow_html=True)
+            init_idx = player_options.index(my_data["formation"].get("LCM")) if my_data["formation"].get("LCM") in player_options else 0
+            lcm_pick = st.selectbox("LCM 미드필더", player_options, index=init_idx, key="slot_LCM")
+        with col_f5:
+            st.markdown("<div class='pitch-slot'><b>CM</b></div>", unsafe_allow_html=True)
+            init_idx = player_options.index(my_data["formation"].get("CM")) if my_data["formation"].get("CM") in player_options else 0
+            cm_pick = st.selectbox("CM 중앙 제어", player_options, index=init_idx, key="slot_CM")
+        with col_f6:
+            st.markdown("<div class='pitch-slot'><b>RCM</b></div>", unsafe_allow_html=True)
+            init_idx = player_options.index(my_data["formation"].get("RCM")) if my_data["formation"].get("RCM") in player_options else 0
+            rcm_pick = st.selectbox("RCM 미드필더", player_options, index=init_idx, key="slot_RCM")
+
+        st.write("")
+
+        # 3. 수비진 (LB, LCB, RCB, RB)
+        col_f7, col_f8, col_f9, col_f10 = st.columns(4)
+        with col_f7:
+            st.markdown("<div class='pitch-slot'><b>LB</b></div>", unsafe_allow_html=True)
+            init_idx = player_options.index(my_data["formation"].get("LB")) if my_data["formation"].get("LB") in player_options else 0
+            lb_pick = st.selectbox("LB 측면 수비", player_options, index=init_idx, key="slot_LB")
+        with col_f8:
+            st.markdown("<div class='pitch-slot'><b>LCB</b></div>", unsafe_allow_html=True)
+            init_idx = player_options.index(my_data["formation"].get("LCB")) if my_data["formation"].get("LCB") in player_options else 0
+            lcb_pick = st.selectbox("LCB 중앙 수비", player_options, index=init_idx, key="slot_LCB")
+        with col_f9:
+            st.markdown("<div class='pitch-slot'><b>RCB</b></div>", unsafe_allow_html=True)
+            init_idx = player_options.index(my_data["formation"].get("RCB")) if my_data["formation"].get("RCB") in player_options else 0
+            rcb_pick = st.selectbox("RCB 중앙 수비", player_options, index=init_idx, key="slot_RCB")
+        with col_f10:
+            st.markdown("<div class='pitch-slot'><b>RB</b></div>", unsafe_allow_html=True)
+            init_idx = player_options.index(my_data["formation"].get("RB")) if my_data["formation"].get("RB") in player_options else 0
+            rb_pick = st.selectbox("RB 측면 수비", player_options, index=init_idx, key="slot_RB")
+
+        st.write("")
+
+        # 4. 골키퍼 (GK)
+        col_gk_left, col_gk_center, col_gk_right = st.columns([1, 1, 1])
+        with col_gk_center:
+            st.markdown("<div class='pitch-slot'><b>GK</b></div>", unsafe_allow_html=True)
+            init_idx = player_options.index(my_data["formation"].get("GK")) if my_data["formation"].get("GK") in player_options else 0
+            gk_pick = st.selectbox("GK 수문장", player_options, index=init_idx, key="slot_GK")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.write("---")
+        
+        # 저장 버튼 및 유효성 검사
+        if st.button("💾 스쿼드 라인업 변경사항 저장하기", type="primary", use_container_width=True):
+            temp_formation = {
+                "LW": lw_pick, "ST": st_pick, "RW": rw_pick,
+                "LCM": lcm_pick, "CM": cm_pick, "RCM": rcm_pick,
+                "LB": lb_pick, "LCB": lcb_pick, "RCB": rcb_pick, "RB": rb_pick,
+                "GK": gk_pick
+            }
+            
+            # 중복 검사용 리스트 (공석 제외)
+            chosen_names = [v for v in temp_formation.values() if v != "공석 (선택 안 함)"]
+            
+            if len(chosen_names) != len(set(chosen_names)):
+                st.error("❌ 오류: 한 명의 선수를 서로 다른 포지션에 중복 배치할 수 없습니다!")
+            else:
+                # 공석 필터링 후 저장
+                final_formation = {}
+                for k, v in temp_formation.items():
+                    if v != "공석 (선택 안 함)":
+                        final_formation[k] = v
+                
+                users_db[my_id]["formation"] = final_formation
+                save_db(users_db)
+                st.success("🏁 구단주님의 베스트 11 스쿼드가 클럽 데이터베이스에 성공적으로 안전 저장되었습니다!")
+                time.sleep(1)
+                st.rerun()
+
+    # ==================== 탭 4: 내 프로필 설정 화면 ====================
     with tab_profile:
         st.title("👤 유저 프로필 센터")
         st.write("---")
