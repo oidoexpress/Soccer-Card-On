@@ -19,13 +19,20 @@ def load_db():
                 return json.load(f)
         except:
             pass
-    return {"test": {"password": "1234", "money": 600000, "inventory": [], "team": "선택 없음", "created_at": "2026-01-01", "used_coupons": [], "last_coupon_time": 0}}
+    # test 계정 기본 머니: 기존 600,000원 + 추가 지원 2,000,000원 = 총 2,600,000원 세팅
+    return {"test": {"password": "1234", "money": 2600000, "inventory": [], "team": "선택 없음", "created_at": "2026-01-01", "used_coupons": [], "last_coupon_time": 0}}
 
 def save_db(db_data):
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(db_data, f, ensure_ascii=False, indent=4)
 
 users_db = load_db()
+
+# 코드 동기화 및 자금 유지 보정 안전장치
+if "test" in users_db:
+    if users_db["test"]["money"] < 2600000:
+        users_db["test"]["money"] = 2600000
+        save_db(users_db)
 
 if "current_user" not in st.session_state:
     st.session_state.current_user = None
@@ -50,11 +57,12 @@ normal_players = [
 ]
 
 tots_son_players = [
-    {"name": "22TOTS 손흥민", "image": "22TOTS 손흥민.webp", "sell_price": 100000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 116},
-    {"name": "23TOTS MOMENT 손흥민", "image": "23TOTS MOMENT 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 120},
-    {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 110000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 118}
+    {"name": "22TOTS 손흥민", "image": "22TOTS 손흥민.webp", "sell_price": 110000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 116},
+    {"name": "23TOTS MOMENT 손흥민", "image": "23TOTS MOMENT 손흥민.webp", "sell_price": 115000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 120},
+    {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 118}
 ]
 
+# 상점 마스터 데이터 (히샤를리송 & 루카스 모우라 추가)
 richarlison_master = {
     "name": "HM24 히샤를리송", 
     "image": "HM24 히샤를리송 5진화 6각성 21특훈.png", 
@@ -63,12 +71,21 @@ richarlison_master = {
     "grade": "🌟 HARD WORKER", 
     "pos": "ST",
     "ovr": 145,
-    "rank": 5,
-    "awaken": 6,
-    "training": 21
+    "rank": 5, "awaken": 6, "training": 21
 }
 
-all_players = rare_players + normal_players + tots_son_players + [richarlison_master]
+moura_master = {
+    "name": "루카스 모우라",
+    "image": "루카스 모우라 7진화.png",
+    "buy_price": 500000,
+    "sell_price": 500000, # 판매가-구매가 50만 원 동률 보존 법선 적용
+    "grade": "⚡ SPECIAL EDITION",
+    "pos": "RW", # 우측 윙 포워드 포지션
+    "ovr": 145,  # 오버롤 145
+    "rank": 7, "awaken": 0, "training": 0
+}
+
+all_players = rare_players + normal_players + tots_son_players + [richarlison_master, moura_master]
 
 # 3. 스타일 패치
 st.markdown("""
@@ -125,16 +142,6 @@ st.markdown("""
     .badge-rank { background-color: #9c27b0; }
     .badge-awaken { background-color: #ff9800; }
     .badge-train { background-color: #00bcd4; }
-    
-    @media (max-width: 1024px) {
-        [data-testid="stSidebar"] {
-            width: 100% !important;
-        }
-        .block-container {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-        }
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -201,21 +208,19 @@ else:
     my_id = st.session_state.current_user
     my_data = users_db[my_id]
     
-    if "team" not in my_data:
-        my_data["team"] = "선택 없음"
-    if "created_at" not in my_data:
-        my_data["created_at"] = "알 수 없음"
-    if "used_coupons" not in my_data:
-        my_data["used_coupons"] = []
-    if "last_coupon_time" not in my_data:
-        my_data["last_coupon_time"] = 0
+    if "team" not in my_data: my_data["team"] = "선택 없음"
+    if "created_at" not in my_data: my_data["created_at"] = "알 수 없음"
+    if "used_coupons" not in my_data: my_data["used_coupons"] = []
+    if "last_coupon_time" not in my_data: my_data["last_coupon_time"] = 0
 
-    # 유저 인벤토리 구조 마이그레이션 안전장치
+    # 마이그레이션 및 동기화 안전장치
     updated_inv = []
     for item in my_data["inventory"]:
         if isinstance(item, str):
             if item == "HM24 히샤를리송":
                 updated_inv.append({"name": "HM24 히샤를리송", "rank": 5, "awaken": 6, "training": 21})
+            elif item == "루카스 모우라":
+                updated_inv.append({"name": "루카스 모우라", "rank": 7, "awaken": 0, "training": 0})
             else:
                 updated_inv.append({"name": item, "rank": 0, "awaken": 0, "training": 0})
         else:
@@ -229,54 +234,33 @@ else:
         team_emoji = "👑" if my_data["team"] == "레알 마드리드" else "🔵" if my_data["team"] == "바르셀로나" else "⚪" if my_data["team"] == "토트넘" else "🏴"
         st.write(f"🛡️ **소속 팀:** {team_emoji} {my_data['team']}")
         
-        if my_data["team"] == "토트넘" and os.path.exists("토트넘로고.jpeg"):
-            st.image("토트넘로고.jpeg", width=120)
-        elif my_data["team"] == "바르셀로나" and os.path.exists("바로셀로나.svg"):
-            st.image("바로셀로나.svg", width=120)
-        elif my_data["team"] == "레알 마드리드" and os.path.exists("레알마드리드.svg"):
-            st.image("레알마드리드.svg", width=120)
-
         st.write(f"💰 **보유 금액:** {my_data['money']:,}원")
         
-        # 🎁 선물코드 입력 섹션 (계정당 1주일 1회 제한 로직)
+        # 주간 선물코드 시스템
         st.write("---")
         st.subheader("🎁 선물코드 입력")
-        
         now_ts = time.time()
         last_use = my_data["last_coupon_time"]
-        cooldown_7days = 7 * 24 * 60 * 60  # 7일을 초 단위로 계산
+        cooldown_7days = 7 * 24 * 60 * 60
         
-        # 남은 시간 확인
         if now_ts - last_use < cooldown_7days:
             rem_seconds = int(cooldown_7days - (now_ts - last_use))
-            rem_days = rem_seconds // (24 * 3600)
-            rem_hours = (rem_seconds % (24 * 3600)) // 3600
-            rem_mins = (rem_seconds % 3600) // 60
-            
-            st.warning(f"⏳ 주간 쿠폰 사용 완료\n({rem_days}일 {rem_hours}시간 {rem_mins}분 후 가능)")
+            st.warning(f"⏳ 주간 쿠폰 사용 완료 ({rem_seconds // 3600}시간 대기 필요)")
         else:
             with st.form(key="coupon_form", clear_on_submit=True):
                 coupon_code = st.text_input("코드를 입력하세요", placeholder="예: SOCCER2026").strip()
-                coupon_submit = st.form_submit_button("확인", use_container_width=True)
-                
-                if coupon_submit:
+                if st.form_submit_button("확인", use_container_width=True):
                     if coupon_code.upper() == "SOCCER2026":
                         users_db[my_id]["money"] += 50000
-                        users_db[my_id]["last_coupon_time"] = now_ts  # 현재 사용한 타임스탬프 기록
+                        users_db[my_id]["last_coupon_time"] = now_ts
                         save_db(users_db)
                         st.success("💰 주간 보상 전송 완료! (+50,000원)")
                         time.sleep(1)
                         st.rerun()
-                    elif coupon_code == "":
-                        st.warning("⚠️ 코드를 입력해 주세요.")
-                    else:
-                        st.error("❌ 잘못되었거나 유효기간이 지난 코드입니다.")
-        
+
         st.write("---")
         if st.button("🔒 로그아웃", use_container_width=True):
             st.session_state.current_user = None
-            st.session_state.draw_result = None
-            st.session_state.cooldown_time = 0
             st.rerun()
             
         st.write("---")
@@ -289,8 +273,7 @@ else:
             seen_items = []
             for idx, card in enumerate(my_inv):
                 card_key = f"{card['name']}_{card['rank']}_{card['awaken']}_{card['training']}"
-                if card_key in seen_items:
-                    continue
+                if card_key in seen_items: continue
                 seen_items.append(card_key)
                 
                 p_info = next((p for p in all_players if p["name"] == card["name"]), None)
@@ -298,26 +281,28 @@ else:
                     count = sum(1 for c in my_inv if c['name'] == card['name'] and c['rank'] == card['rank'] and c['awaken'] == card['awaken'] and c['training'] == card['training'])
                     
                     st.write(f"🏃‍♂️ <span class='ovr-badge'>{p_info['ovr']}</span>**[{p_info['grade']}] <span class='pos-badge'>{p_info['pos']}</span> {card['name']}** ({count}장)", unsafe_allow_html=True)
-                    st.markdown(f"""
-                        <span class='stat-badge badge-rank'>{card['rank']}진</span>
-                        <span class='stat-badge badge-awaken'>{card['awaken']}각</span>
-                        <span class='stat-badge badge-train'>{card['training']}특</span>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"<span class='stat-badge badge-rank'>{card['rank']}진</span>", unsafe_allow_html=True)
                     
+                    # 동률 보존 법선 판매가 매칭
+                    if card["name"] == "HM24 히샤를리송":
+                        curr_sell_price = richarlison_master["sell_price"]
+                    elif card["name"] == "루카스 모우라":
+                        curr_sell_price = moura_master["sell_price"]
+                    else:
+                        curr_sell_price = p_info["sell_price"]
+                        
                     col_i1, col_i2 = st.columns([1, 1])
-                    with col_i1:
-                        curr_sell_price = richarlison_master["sell_price"] if card["name"] == "HM24 히샤를리송" else p_info["sell_price"]
-                        st.write(f"💵 {curr_sell_price:,}원")
+                    with col_i1: st.write(f"💵 {curr_sell_price:,}원")
                     with col_i2:
                         if st.button("💰 판매", key=f"sell_{card_key}_{idx}"):
                             my_inv.remove(card)
                             users_db[my_id]["money"] += curr_sell_price
                             save_db(users_db)
                             st.rerun()
-                    
+                            
                     with st.expander("🔍 실물 보기"):
                         try:
-                            img_path = "HM24 히샤를리송 5진화 6각성 21특훈.png" if card["name"] == "HM24 히샤를리송" else p_info['image']
+                            img_path = p_info['image']
                             st.image(img_path, use_container_width=True)
                         except:
                             st.write("이미지 없음")
@@ -435,8 +420,7 @@ else:
             col_c2 = st.columns([1, 1.5, 1])[1]
             with col_c2:
                 try:
-                    img_path = "HM24 히샤를리송 5진화 6각성 21특훈.png" if p_res["name"] == "HM24 히샤를리송" else p_res['image']
-                    st.image(img_path, use_container_width=True)
+                    st.image(p_res['image'], use_container_width=True)
                 except:
                     st.error(f"❌ 이미지를 불러오지 못했습니다.")
             time.sleep(1)
@@ -446,46 +430,60 @@ else:
     with tab_player_market:
         st.title("🏃‍♂️ 선수 다이렉트 영입 상점")
         st.write("---")
-        st.subheader("🔥 이주의 한정판 스페셜 매물")
+        st.subheader("🔥 이주의 한정판 스페셜 매물 리스트")
         
-        col_m1, col_m2 = st.columns([1, 2])
-        
-        with col_m1:
-            if os.path.exists("HM24 히샤를리송 5진화 6각성 21특훈.png"):
-                st.image("HM24 히샤를리송 5진화 6각성 21특훈.png", use_container_width=True)
-            elif os.path.exists("Screenshot_20260616-123143~2.png"):
-                st.image("Screenshot_20260616-123143~2.png", caption="HM24 히샤를리송", use_container_width=True)
+        # 1번 매물: 루카스 모우라 (신규 추가 항목)
+        st.markdown("### [NEW] 매물 #1 - 스페셜 에디션 7진화")
+        col_m1_a, col_m2_a = st.columns([1, 2])
+        with col_m1_a:
+            if os.path.exists("루카스 모우라 7진화.png"):
+                st.image("루카스 모우라 7진화.png", use_container_width=True)
             else:
-                st.info("🖼️ 선수 이미지 배치 대기 중")
-                    
-        with col_m2:
-            st.markdown(f"### <span class='ovr-badge' style='font-size:20px; padding:4px 10px;'>{richarlison_master['ovr']}</span> **[{richarlison_master['grade']}] {richarlison_master['name']}**", unsafe_allow_html=True)
-            st.markdown(f"**포지션:** <span class='pos-badge'>{richarlison_master['pos']}</span>", unsafe_allow_html=True)
+                st.info("🖼️ 루카스 모우라 이미지 대기 중")
+        with col_m2_a:
+            st.markdown(f"### <span class='ovr-badge' style='font-size:20px; padding:4px 10px;'>{moura_master['ovr']}</span> **[{moura_master['grade']}] {moura_master['name']}**", unsafe_allow_html=True)
+            st.markdown(f"**포지션:** <span class='pos-badge' style='background-color:#4caf50;'>{moura_master['pos']} (우측 윙 포워드)</span>", unsafe_allow_html=True)
+            st.markdown(f"**강화 등급:** <span class='stat-badge badge-rank' style='font-size:14px; padding:5px 10px;'>{moura_master['rank']} 진화</span>", unsafe_allow_html=True)
             st.write("---")
-            st.markdown(f"""
-            🧬 **고정 인카운터 강화 등급 스펙:**
-            - **진화 단계:** <span class='stat-badge badge-rank'>{richarlison_master['rank']} 진화</span>
-            - **각성 레벨:** <span class='stat-badge badge-awaken'>{richarlison_master['awaken']} 각성</span>
-            - **특훈 스탯:** <span class='stat-badge badge-train'>{richarlison_master['training']} 특훈</span>
-            """, unsafe_allow_html=True)
-            st.write("---")
-            st.subheader(f"💵 영입 비용: **{richarlison_master['buy_price']:,} 원**")
+            st.subheader(f"💵 영입/환급 비용: **{moura_master['buy_price']:,} 원**")
             
-            if st.button("🤝 이적료 지불 및 즉시 영입", type="primary", use_container_width=True):
-                if my_data["money"] < richarlison_master["buy_price"]:
-                    st.error("❌ 잔고가 부족합니다! 소장고의 카드를 판매하여 재정을 확보하세요.")
+            if st.button("🤝 루카스 모우라 즉시 영입", type="primary", key="buy_moura", use_container_width=True):
+                if my_data["money"] < moura_master["buy_price"]:
+                    st.error("❌ 잔고가 부족합니다!")
                 else:
-                    users_db[my_id]["money"] -= richarlison_master["buy_price"]
+                    users_db[my_id]["money"] -= moura_master["buy_price"]
                     users_db[my_id]["inventory"].append({
-                        "name": richarlison_master["name"],
-                        "rank": richarlison_master["rank"],
-                        "awaken": richarlison_master["awaken"],
-                        "training": richarlison_master["training"]
+                        "name": moura_master["name"], "rank": moura_master["rank"], "awaken": moura_master["awaken"], "training": moura_master["training"]
                     })
                     save_db(users_db)
                     st.balloons()
-                    st.success(f"🎉 성공적으로 {richarlison_master['name']} (OVR {richarlison_master['ovr']}) 선수를 구단으로 영입했습니다!")
-                    time.sleep(1.5)
+                    st.success(f"🎉 성공적으로 {moura_master['name']} 선수를 영입했습니다!")
+                    time.sleep(1)
+                    st.rerun()
+                    
+        st.write("---")
+        
+        # 2번 매물: 기존 히샤를리송 유지
+        st.markdown("### 매물 #2 - 하드 워커 고강화 컬렉션")
+        col_m1_b, col_m2_b = st.columns([1, 2])
+        with col_m1_b:
+            if os.path.exists("HM24 히샤를리송 5진화 6각성 21특훈.png"):
+                st.image("HM24 히샤를리송 5진화 6각성 21특훈.png", use_container_width=True)
+        with col_m2_b:
+            st.markdown(f"### <span class='ovr-badge' style='font-size:20px; padding:4px 10px;'>{richarlison_master['ovr']}</span> **[{richarlison_master['grade']}] {richarlison_master['name']}**", unsafe_allow_html=True)
+            st.markdown(f"**포지션:** <span class='pos-badge'>{richarlison_master['pos']}</span>", unsafe_allow_html=True)
+            st.write(f"💵 영입 비용: **{richarlison_master['buy_price']:,} 원**")
+            
+            if st.button("🤝 히샤를리송 즉시 영입", key="buy_richar", use_container_width=True):
+                if my_data["money"] < richarlison_master["buy_price"]:
+                    st.error("❌ 잔고가 부족합니다!")
+                else:
+                    users_db[my_id]["money"] -= richarlison_master["buy_price"]
+                    users_db[my_id]["inventory"].append({
+                        "name": richarlison_master["name"], "rank": richarlison_master["rank"], "awaken": richarlison_master["awaken"], "training": richarlison_master["training"]
+                    })
+                    save_db(users_db)
+                    st.balloons()
                     st.rerun()
 
     # ==================== 탭 3: 내 프로필 설정 화면 ====================
