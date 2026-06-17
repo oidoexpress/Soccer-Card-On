@@ -50,9 +50,9 @@ normal_players = [
 ]
 
 tots_son_players = [
-    {"name": "22TOTS 손흥민", "image": "22TOTS 손흥민.webp", "sell_price": 800000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 116},
-    {"name": "23TOTS MOMENT 손흥민", "image": "23TOTS MOMENT 손흥민.webp", "sell_price": 800000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 120},
-    {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 800000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 118}
+    {"name": "22TOTS 손흥민", "image": "22TOTS 손흥민.webp", "sell_price": 100000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 116},
+    {"name": "23TOTS MOMENT 손흥민", "image": "23TOTS MOMENT 손흥민.webp", "sell_price": 120000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 120},
+    {"name": "UTOTS 손흥민", "image": "UTOTS 손흥민.webp", "sell_price": 110000, "grade": "🔥 TOTS", "pos": "LWF", "ovr": 118}
 ]
 
 richarlison_master = {
