@@ -70,9 +70,9 @@ richarlison_master = {
     "grade": "🌟 HARD WORKER", 
     "pos": "ST",
     "ovr": 145,
-    "rank": 5,       # 5진화
-    "awaken": 6,     # 6강화
-    "training": 21   # 21특훈
+    "rank": 5,       
+    "awaken": 6,     
+    "training": 21   
 }
 
 # 루카스 모우라 사양 (0진화, 7강화, 0특훈)
@@ -84,12 +84,26 @@ moura_master = {
     "grade": "⚡ SPECIAL EDITION",
     "pos": "RW", 
     "ovr": 145,  
-    "rank": 0,       # 0진화
-    "awaken": 7,     # 7강화
+    "rank": 0,       
+    "awaken": 7,     
     "training": 0
 }
 
-all_players = rare_players + normal_players + tots_son_players + [richarlison_master, moura_master]
+# ★ [신규 추가] TOTY 라민 야말 사양 (0강화, 0진화, 0특훈, 60만원)
+yamal_master = {
+    "name": "TOTY 라민 야말",
+    "image": "TOTY 라민 야말.png",
+    "buy_price": 600000,
+    "sell_price": 600000,
+    "grade": "✨ TOTY",
+    "pos": "RW",
+    "ovr": 140,
+    "rank": 0,
+    "awaken": 0,
+    "training": 0
+}
+
+all_players = rare_players + normal_players + tots_son_players + [richarlison_master, moura_master, yamal_master]
 
 # 3. 스타일 패치
 st.markdown("""
@@ -225,6 +239,8 @@ else:
                 updated_inv.append({"name": "HM24 히샤를리송", "rank": 5, "awaken": 6, "training": 21})
             elif item == "루카스 모우라":
                 updated_inv.append({"name": "루카스 모우라", "rank": 0, "awaken": 7, "training": 0})
+            elif item == "TOTY 라민 야말":
+                updated_inv.append({"name": "TOTY 라민 야말", "rank": 0, "awaken": 0, "training": 0})
             else:
                 updated_inv.append({"name": item, "rank": 0, "awaken": 0, "training": 0})
         else:
@@ -235,6 +251,10 @@ else:
             elif item["name"] == "루카스 모우라":
                 item["rank"] = 0
                 item["awaken"] = 7
+                item["training"] = 0
+            elif item["name"] == "TOTY 라민 야말":
+                item["rank"] = 0
+                item["awaken"] = 0
                 item["training"] = 0
             updated_inv.append(item)
     my_data["inventory"] = updated_inv
@@ -293,13 +313,15 @@ else:
                     
                     st.write(f"🏃‍♂️ <span class='ovr-badge'>{p_info['ovr']}</span>**[{p_info['grade']}] <span class='pos-badge'>{p_info['pos']}</span> {card['name']}** ({count}장)", unsafe_allow_html=True)
                     
-                    # ★ [수정 사항] 노출 순서: 강화 -> 진화 -> 특훈 순으로 정렬 배치
+                    # 강화 -> 진화 -> 특훈 배지 배치 순서 유지
                     st.markdown(f"<span class='stat-badge badge-awaken'>{card['awaken']}강화</span><span class='stat-badge badge-rank'>{card['rank']}진화</span><span class='stat-badge badge-train'>{card['training']}특훈</span>", unsafe_allow_html=True)
                     
                     if card["name"] == "HM24 히샤를리송":
                         curr_sell_price = richarlison_master["sell_price"]
                     elif card["name"] == "루카스 모우라":
                         curr_sell_price = moura_master["sell_price"]
+                    elif card["name"] == "TOTY 라민 야말":
+                        curr_sell_price = yamal_master["sell_price"]
                     else:
                         curr_sell_price = p_info["sell_price"]
                         
@@ -444,8 +466,8 @@ else:
         st.write("---")
         st.subheader("🔥 이주의 한정판 스페셜 매물 리스트")
         
-        # 1번 매물: 루카스 모우라 (★ 강화 -> 진화 -> 특훈 순 정렬)
-        st.markdown("### [NEW] 매물 #1 - 스페셜 에디션 7강화 컬렉션")
+        # 1번 매물: 루카스 모우라
+        st.markdown("### 매물 #1 - 스페셜 에디션 7강화 컬렉션")
         col_m1_a, col_m2_a = st.columns([1, 2])
         with col_m1_a:
             if os.path.exists("루카스 모우라 7진화.png"):
@@ -454,7 +476,7 @@ else:
                 st.info("🖼️ 루카스 모우라 이미지 대기 중")
         with col_m2_a:
             st.markdown(f"### <span class='ovr-badge' style='font-size:20px; padding:4px 10px;'>{moura_master['ovr']}</span> **[{moura_master['grade']}] {moura_master['name']}**", unsafe_allow_html=True)
-            st.markdown(f"**포지션:** <span class='pos-badge' style='background-color:#4caf50;'>{moura_master['pos']} (우측 윙 포워드)</span>", unsafe_allow_html=True)
+            st.markdown(f"**포지션:** <span class='pos-badge' style='background-color:#4caf50;'>{moura_master['pos']}</span>", unsafe_allow_html=True)
             st.markdown(f"<span class='stat-badge badge-awaken'>{moura_master['awaken']}강화</span><span class='stat-badge badge-rank'>{moura_master['rank']}진화</span><span class='stat-badge badge-train'>{moura_master['training']}특훈</span>", unsafe_allow_html=True)
             st.write("---")
             st.subheader(f"💵 영입/환급 비용: **{moura_master['buy_price']:,} 원**")
@@ -475,7 +497,7 @@ else:
                     
         st.write("---")
         
-        # 2번 매물: 히샤를리송 (★ 강화 -> 진화 -> 특훈 순 정렬)
+        # 2번 매물: 히샤를리송
         st.markdown("### 매물 #2 - 하드 워커 고강화 컬렉션")
         col_m1_b, col_m2_b = st.columns([1, 2])
         with col_m1_b:
@@ -497,6 +519,37 @@ else:
                     })
                     save_db(users_db)
                     st.balloons()
+                    st.rerun()
+
+        st.write("---")
+
+        # ★ [신규 추가] 3번 매물: TOTY 라민 야말
+        st.markdown("### [NEW] 매물 #3 - TOTY 카탈루냐의 신성")
+        col_m1_c, col_m2_c = st.columns([1, 2])
+        with col_m1_c:
+            if os.path.exists("TOTY 라민 야말.png"):
+                st.image("TOTY 라민 야말.png", use_container_width=True)
+            else:
+                st.info("🖼️ 라민 야말 이미지 대기 중")
+        with col_m2_c:
+            st.markdown(f"### <span class='ovr-badge' style='font-size:20px; padding:4px 10px;'>{yamal_master['ovr']}</span> **[{yamal_master['grade']}] {yamal_master['name']}**", unsafe_allow_html=True)
+            st.markdown(f"**포지션:** <span class='pos-badge' style='background-color:#0288d1;'>{yamal_master['pos']} (우측 윙 포워드)</span>", unsafe_allow_html=True)
+            st.markdown(f"<span class='stat-badge badge-awaken'>{yamal_master['awaken']}강화</span><span class='stat-badge badge-rank'>{yamal_master['rank']}진화</span><span class='stat-badge badge-train'>{yamal_master['training']}특훈</span>", unsafe_allow_html=True)
+            st.write("---")
+            st.subheader(f"💵 영입/환급 비용: **{yamal_master['buy_price']:,} 원**")
+            
+            if st.button("🤝 라민 야말 즉시 영입", type="primary", key="buy_yamal", use_container_width=True):
+                if my_data["money"] < yamal_master["buy_price"]:
+                    st.error("❌ 잔고가 부족합니다!")
+                else:
+                    users_db[my_id]["money"] -= yamal_master["buy_price"]
+                    users_db[my_id]["inventory"].append({
+                        "name": yamal_master["name"], "rank": yamal_master["rank"], "awaken": yamal_master["awaken"], "training": yamal_master["training"]
+                    })
+                    save_db(users_db)
+                    st.balloons()
+                    st.success(f"🎉 {yamal_master['name']} 선수를 성공적으로 영입했습니다!")
+                    time.sleep(1)
                     st.rerun()
 
     # ==================== 탭 3: 내 프로필 설정 화면 ====================
